@@ -64,9 +64,9 @@
 3. 对IOC真正的理解
 
    1. spring是单例模式的,如果没有IOC,每一个都要编写单例的方法.
-   2. 对于Bean的依赖管理,如果类A依赖B,C,D类,不需要一个一个的new这样耦合在代码的方式,通过IOC可以实现Bean的管理和解耦.
+   2. 对于Bean的**依赖管理**,如果类A依赖B,C,D类,不需要一个一个的new这样耦合在代码的方式,通过IOC可以实现Bean的管理和解耦.
 
-4. Autowired注解相当于在xml中写了一个Bean注解,Autowired注入成员变量(写在类名上)，利用field反射注入，要等类加载完了才注入bean.
+4. Autowired注解相当于在xml中写了一个Bean注解,Autowired注入成员变量(写在类名上)，利用set方法注入，要等类加载完了才注入bean.
 
    Autowired注入构造方法中，利用构造器注入，有先后依赖关系.
 
@@ -116,14 +116,22 @@
        - list,set,map 复杂数据结构的封装.各种标签的介绍.
        - byName和byType自动绑定,不用我们手写class类,省去了一些代码量,但是类型唯一时候才能保证成功.
        - lazy-init 主要针对application容器设置延时初始化.
-   - 注解方式.注解注入其实是使用注解的方式进行构造器注入或者set注入。使用哪种方式注入,通过位置来判断,如果@autowired在构造方法上就是使用了构造器注入的.**这里需要区分Bean注入的方式和Bean注册方式的区别.**注解的方式其实是Bean注册方式的一种.
+   - 注解方式.注解注入其实是使用注解的方式进行构造器注入或者set注入。使用哪种方式注入,通过位置来判断,如果@autowired在构造方法上就是使用了构造器注入的.**这里需要区分Bean注入的方式和Bean注册方式的区别.**注解的方式其实是Bean注册方式的一种.注册是管理的类之前的关系,注入关注的是类的生成.
      - Bean的scope
        - 单例 与IOC容器拥有相同的寿命.
        - 多例  容器为每次请求创建一个对象 ,随后不在管理他的生命周期.
        - request,session,global session:request是多例的一个特例,只是拥有了具体的使用场景.
      - FactoryBean本质上一个Bean,只不过这种类型的bean本身,就是生产对象的工厂.不要与BeanFactory相混淆.
 
-5. 小心prototype(多例的陷阱),有时候即使我们配置了多例,但是程序取对象的时候只取同一个对象,这是因为引用不当,每次请求没有向IOC的容器中获取对象,
+5. Bean的Scope:配置中的Bean可以看多是模板,容器会根据他们构造对象,的说那是要创建多少个,构造完成后对象实例存活多久,则是由容器根据Bean的scope语义来决定的.
+
+6. 注意:GOF的单例模式和spring的Singleton模式是不同的,标记为Singleton的bean是由容器来保证这类的bean在同一个容器中只存在一个共享实例;而Singleton模式则是保证同一个ClassLoader中只存在一个这种类型的实例.而设计模式中，我们是对构造方法私有化，进行单例模式，用户从而不能new多个实例。
+
+7. 单例:容器中只存在一个共享的实例.存活时间:从容器启动,到它第一次被请求实例化开始,只要是容器不销毁或者退出,改Bean就会一直存活.多例:每次请求都会创建一个全新的对象,只负责创建,后期的对象的生命周期由请求方来维护.
+
+8. request,session,global session只适用于web应用程序.
+
+9. 小心prototype(多例的陷阱),有时候即使我们配置了多例,但是程序取对象的时候只取同一个对象,这是因为引用不当,每次请求没有向IOC的容器中获取对象,解决方法如下:
 
    1. 需要配置lookup-method方法注入的方式.
 
@@ -134,43 +142,47 @@
    ```
 
    2. 使用BeanFactoryAware接口
-   3. 方法替换.
+   3. 方法替换.**???**
 
-6. Spring的IOC容器
+10. **FactoryBean和BeanFactory的区别**:FactoryBean本质是一个bean,是Spring容器提供的一种可以扩展容器对象实例化逻辑的接口.
 
-   1. 容器的启动阶段
+11. Spring的IOC容器
 
-      ​		通过BeanDefinitionReader对加载的Configuration进行解析和分析,并把信息编为BeanDefinition,然后将所有的BeanDefinition注册到相应的BeanDefinitionRegistry中.
+    1. **容器的启动阶段**
 
-   2. Bean的实例化阶段
+       ​		通过BeanDefinitionReader对加载的Configuration进行解析和分析,并把信息编为BeanDefinition,然后将所有的BeanDefinition注册到相应的BeanDefinitionRegistry中.侧重于对象管理信息的收集.
 
-      ​		当某个请求通过容器的getBean方法(或隐士的调用)明确的请求某个对象的时候,根据BeanDefinitionRegistry实例化Bean,注入依赖.
+    2. **Bean的实例化阶段**
 
-7. 容器启动时候的扩展
+       ​		当某个请求通过容器的getBean方法(或隐士的调用)明确的请求某个对象的时候,根据BeanDefinitionRegistry实例化Bean,注入依赖.
 
-   - BeanFactoryPostProcess的容器扩展机制.允许容器实例化之前,对注册到容器BeanDefinition所保存的信息做相应的修改.例如修改Bean定义的某些属性,为Bean定义添加其他的信息等.
-   - PropertyPlaceholderConfigurer
+12. 容器启动时候的扩展
 
-8. Bean的一生
+    - BeanFactoryPostProcess的容器扩展机制.允许容器实例化之前(继在容器启动的最后时刻),对注册到容器BeanDefinition所保存的信息做相应的修改.例如修改Bean定义的某些属性,为Bean定义添加其他的信息等.最常见的例子就是数据库的用户名和密码.
+    - PropertyPlaceholderConfigurer,PropertyOverrideConfigurer和CustomEditorConfigure
 
-   1. 对于BeanFactory使用的是Bean的懒加载策略,只到A被请求bean或者间接请求,间接是指有依赖到Bean时候.
-   2. 虽然是通过BeanDefinition取得实例化信息,通过反射就能创建对象实例,但是并不是直接返回的对象实例,而是BeanWrapper对构造完成的对象实例进行包裹.返回相应的BeanWrapper.
-   3. BeanWarpperImpl实现类作用是对每个Bean实现包裹,设置或者获取Bean的属性,BeanWarpperImpl间接继承了PropertyEditorRegitry,会将注册信息传递给wrapper.
+13. Bean的实例化阶段
 
-9. BeanPostProcessor
+    1. ![image-20201210162931583](C:\Users\b9082\AppData\Roaming\Typora\typora-user-images\image-20201210162931583.png)
+    2. 对于BeanFactory使用的是Bean的懒加载策略,只到A被请求bean或者间接请求,间接是指有依赖到Bean时候.
+    3. 虽然是通过BeanDefinition取得实例化信息,通过反射就能创建对象实例,但是并不是直接返回的对象实例,而是BeanWrapper对构造完成的对象实例进行包裹.返回相应的BeanWrapper.进行包裹为的就是第二步设置对象属性.
+    4. BeanWarpperImpl实现类作用是对每个Bean实现包裹,设置或者获取Bean的属性,BeanWarpperImpl间接继承了PropertyEditorRegitry,会将注册信息传递给wrapper.
 
-   1. 存在于对象实例化阶段,注意与BeanFactorPostProcess则是存在于容器的启动阶段.
-   2. 各种aware接口就是在这postProcessBeforeInitialization处理的.
-   3. Spring的AOP功能就是用BeanPostProcess来为对象生成相应的代理对象.
+14. BeanPostProcessor
 
-10. 自定义BeanPostProcess
+    1. 存在于对象实例化阶段,注意与BeanFactorPostProcess则是存在于容器的启动阶段.与BeanFactoryPostProcess管理BeanDefinition类似的是,BeanPostProcessor管理的实例化后的对象.
+    2. 各种aware接口就是在这postProcessBeforeInitialization处理的.
+    3. Spring的AOP功能就是用BeanPostProcess来为对象生成相应的**代理对象**.
 
-   1. 实现BeanPostProcessor接口,重写BeforeInitialization
-   2. 将自定义的processor注册到容器.
-      - 对于BeanFactory使用configurableBeanFactory.addBeanProcessor方法
-      - 对于Application则作为一个Bean配置在xml中就可以了.
+15. 自定义BeanPostProcess
 
-11. Bean的销毁
+   16. 实现BeanPostProcessor接口,重写BeforeInitialization
+
+   17. 将自定义的processor注册到容器.
+       - 对于BeanFactory使用configurableBeanFactory.addBeanProcessor方法
+       - 对于Application则作为一个Bean配置在xml中就可以了.
+
+18. Bean的销毁
 
     1. BeanFactory容器  调用ConfigurableBeanFactory提供的destroySingletons()的方法.
     2. ApplicationContext容器  调用registerShutdownHook方法.
