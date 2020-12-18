@@ -181,7 +181,8 @@
    17. 将自定义的processor注册到容器.
        - 对于BeanFactory使用configurableBeanFactory.addBeanProcessor方法
        - 对于Application则作为一个Bean配置在xml中就可以了.
-
+- InitializingBean和init-method 对于那些实例化后仍需要更改bean属性的需求.例如计算股市信息去除周六日.InitializingBean是一个接口,init-method则在xml配置有限执行的方法.
+       
 18. Bean的销毁
 
     1. BeanFactory容器  调用ConfigurableBeanFactory提供的destroySingletons()的方法.
@@ -198,20 +199,28 @@
 
 ### 第六章 注解
 
-1. @Autowired  @Quality @ Resource 
-2. @PostConstruct和@PreDestroy不是服务于依赖注入的,而是生命周期相关的方法,这与Spring的InitializingBean和DisposableBean接口,以及配置项中,init-method和destory-method起到类似的作用.
-3. 使用注解其实是类似使用自定义的BeanPostProcess,需要将注解对应的AutowiredAnnotationBeanPostProcessor,必须在配置文件中使用<context:annotation-config>配置开启注解.,开启包扫描的注解<context:component-scan>也注入了这个process.
+1. @Autowired :与在xml中定义autowire="bytype",按照类型进行注入,可以定义在方法和属性上面.定义子构造方法上就是通过构造方法注入的,定义在属性上就是通过set方法注入的.
+2. 使用@Autowired ,容器会遍历bean,如果符合注入的类的类型,就可以从当前容器管理的对象中获取符合条件的对象,设置给@Autowired所标注的属性域,构造方或者方法的定义.
+3.  @Quality :和@Autowired搭配使用,可以通过名称进行注入.直接点名从容器中要我们需要的对象.
+4. @ Resource :通过名称进行注入.
+5. @PostConstruct和@PreDestroy不是服务于依赖注入的,而是生命周期相关的方法,这与Spring的InitializingBean和DisposableBean接口,以及配置项中,init-method和destory-method起到类似的作用.
+6. 使用注解其实是类似使用自定义的BeanPostProcess,需要将注解对应的AutowiredAnnotationBeanPostProcessor,必须在配置文件中使用<context:annotation-config>配置开启注解.,开启包扫描的注解<context:component-scan>也注入了这个process.
+7. <context:component-scan>这个注解虽然主要的目的是扫描@Controller,@Service,@Dao这类注解,为BeanFactory注入Bean,但是同时也支持<context:annotation-config>这种管理@Autowired依赖的功能.
 
 ### 第七章 AOP
 
-1. 动态的Aop和静态的Aop,动态Aop是学习的重点,动态Aop的织入过程是在系统运行开始之后进行的,而不是预先编译到系统类中,这种方式更容易开发和集成,缺点是需要性能的支持.
-2. Aop的基本概念:
+1. AOP的应用场景:业务需要安全检查和日志记录,如果按照传统面向对象需要在每一个类中添加这两个方法,使用AOP能很好的解决这个问题.
+2. 动态的Aop和静态的Aop,动态Aop是学习的重点,动态Aop的织入过程是在系统运行开始之后进行的,而不是预先编译到系统类中,Aspect以class的身份存在于系统中,采用对系统字节码进行操作的方式来完成Aspect到系统的织入.这种方式更容易开发和集成,缺点是需要性能的支持.
+3. 通过在类加载器生成class文件时,将横切的逻辑加入其中,生成新的class.
+4. Aop的基本概念:
    - 切点(jointPoint):需要对方法增强的地方.可以在异常,方法构造任何地方进行增强的点.
-   - pointcut:是jointPoint的表达式.与切点的区别是切点是在方法内的某个点,只是描述,与执行无关..pointcut才是定义了方法增强的位置.
-   - advice:通知 相当于执行的方法体.
-3. 静态代理没遇见一个类就需要生成一个代理,所以一般使用动态的代理,主要由一个类和一个接口组成,Proxy类和InvocationHandler接口.
-4. 常见的PonitCut
+   - pointcut:直接指定jointPoint所在方法名称.与切点的区别是切点是在方法内的某个点,只是描述,与执行无关.pointcut才是定义了方法增强的位置.
+   - advice:通知 是单一横切关注点的载体,代表会织入到jointPoint的横切逻辑.相当于执行的方法体.
+5. spring aop的实现机制:动态代理机制和字节码生成都是在运行期间为目标对象生成一个代理对象,而将横切逻辑织入到这个代理对象中,系统最终使用的是织入了横切逻辑的代理对象,而不是真正的目标对象.
+6. 静态代理每遇见一个类就需要生成一个代理,所以一般使用动态的代理,主要由一个类和一个接口组成,Proxy类和InvocationHandler接口.
+7. 常见的PonitCut
    - NameMatchMethodPointCut
      - 属于StaticMethodMatcherPointcut的子类,可以根据自身指定的方法名和Jointpoint处的方法名称进行匹配.但是无法对重载的方法进行匹配.
-5. 前置通知可以用来检测文件的位置是否存在.
-6. 异常后置通知可以第一时间知道报出异常
+8. 前置通知可以用来检测文件的位置是否存在.
+9. 异常后置通知可以第一时间知道报出异常
+
