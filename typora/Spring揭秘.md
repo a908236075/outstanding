@@ -236,20 +236,78 @@
 
 ### 第九章 Spring AOP 一世
 
-1. spring AOP当MethodMatcher为false时候,表示不考虑joinpoint的方法参数. 
-2. 可以通过交集或者并集的方式组合pointcut.
-3. 常见的PonitCut
+1. Spring Aop的joinpoint是面向方法的,如果想面向属性,则需要借助AspectJ.
+
+2. spring AOP当MethodMatcher为false时候,表示不考虑joinpoint的方法参数. 
+
+3. PointCut中有两个方法,匹配类型的匹配和方法的匹配.
+
+   1. ```java
+      public interface Pointcut {    
+          Pointcut TRUE = TruePointcut.INSTANCE;    
+          ClassFilter getClassFilter();   
+          MethodMatcher getMethodMatcher();}
+      ```
+
+4. ```java
+   public interface ClassFilter {
+       ClassFilter TRUE = TrueClassFilter.INSTANCE;
+   
+       boolean matches(Class<?> var1);
+   }
+   ```
+
+   ClassFilter比较简单,就是判断类型是否匹配,如果匹配了就返回true;
+
+5. ~~~java
+   public interface MethodMatcher {
+       MethodMatcher TRUE = TrueMethodMatcher.INSTANCE;
+   
+       boolean matches(Method var1, Class<?> var2);
+   
+       boolean isRuntime();
+   
+       boolean matches(Method var1, Class<?> var2, Object... var3);
+   }
+   ~~~
+
+   matches方法提供了关注参数过滤和不关注参数过滤的两种方法.isRuntime为返回false时候,表示不会考虑joinpoint的方法参数,称为StaticMethodMatcher,反之为DynamicMethodMatcher.
+
+   spring最主要的支持就是方法的拦截.
+
+6. pointcut族谱
+
+   ![1608558348213](C:\Users\liubt\AppData\Roaming\Typora\typora-user-images\1608558348213.png)
+
+7. 常见的pointcut
+
+   1. 
+
+8. 可以通过交集或者并集的方式组合pointcut.
+
+9. 常见的PonitCut
    - NameMatchMethodPointCut
      - 属于StaticMethodMatcherPointcut的子类,可以根据自身指定的方法名和Jointpoint处的方法名称进行匹配.但是无法对重载的方法进行匹配.
-4. 前置通知可以用来检测文件的位置是否存在.
-5. 异常后置通知可以第一时间知道报出异常.
-6. AfterReturnAdvice:只有方法正常返回的情况下,才会被执行,并且它不能更改返回值,所以不适合在方法中定义清理资源的这类功能,典型的使用地方是当数据处理完成后,会向数据库添加成功的信息,可以做这种场景的使用.
-7. per-class类型的Advice,即会在目标类所有对象实例之间共享.per-instance:spring Aop中Introduction是唯一一种.不改动目标类定义的情况下,为目标类添加新的属性和行为.
-8. ![image-20201219115741835](C:\Users\b9082\AppData\Roaming\Typora\typora-user-images\image-20201219115741835.png)
-9. ![image-20201219115529841](C:\Users\b9082\AppData\Roaming\Typora\typora-user-images\image-20201219115529841.png)
-10. IntroductionAdvisor 只能用于类级别的拦截.
-11. 当有多个横切逻辑的时候,需要指定他们的优先级,如果没有指定,则按照配置文件声明的顺序,谁先在前谁先执行.多个横切逻辑有时候会因为顺序发生异常.
-12. ProxyFactory是一个织入器.ProxyFactoryBean容器中的织入器.
-13. SpringAOP二代其实底层使用的还是一代.
-14. 注解的方式advice的顺序是,谁先声明谁先执行,但是后置advice,谁先声明,谁就是最后执行优先.
+
+10. 前置通知可以用来检测文件的位置是否存在.
+
+11. 异常后置通知可以第一时间知道报出异常.
+
+12. AfterReturnAdvice:只有方法正常返回的情况下,才会被执行,并且它不能更改返回值,所以不适合在方法中定义清理资源的这类功能,典型的使用地方是当数据处理完成后,会向数据库添加成功的信息,可以做这种场景的使用.
+
+13. per-class类型的Advice,即会在目标类所有对象实例之间共享.per-instance:spring Aop中Introduction是唯一一种.不改动目标类定义的情况下,为目标类添加新的属性和行为.
+
+14. ![image-20201219115741835](C:\Users\b9082\AppData\Roaming\Typora\typora-user-images\image-20201219115741835.png)
+
+15. ![image-20201219115529841](C:\Users\b9082\AppData\Roaming\Typora\typora-user-images\image-20201219115529841.png)
+
+16. IntroductionAdvisor 只能用于类级别的拦截.
+
+17. 当有多个横切逻辑的时候,需要指定他们的优先级,如果没有指定,则按照配置文件声明的顺序,谁先在前谁先执行.多个横切逻辑有时候会因为顺序发生异常.
+
+18. ProxyFactory是一个织入器.ProxyFactoryBean容器中的织入器.
+
+19. SpringAOP二代其实底层使用的还是一代.
+
+20. 注解的方式advice的顺序是,谁先声明谁先执行,但是后置advice,谁先声明,谁就是最后执行优先.
 
