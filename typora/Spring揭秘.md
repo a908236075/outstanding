@@ -3,7 +3,7 @@
 ### 第一章Spring框架总体结构
 
 1. IOC容器,AOP, DAO JDBC和事物管理,ORM Mybatis,SpringMVC.
-2. ![image-20201209100946514](C:\Users\b9082\AppData\Roaming\Typora\typora-user-images\image-20201209100946514.png)
+2. ![image-20201209100946514](.\picture\spring揭秘\image-20201209100946514.png)
 
 ### 第二章 IOC的基本概念
 
@@ -13,7 +13,7 @@
 
    - 构造方法注入:
 
-     - ![image-20201209134452067](C:\Users\b9082\AppData\Roaming\Typora\typora-user-images\image-20201209134452067.png)
+     - ![image-20201209134452067](.\picture\spring揭秘\image-20201209134452067.png)
      - 好处是随着对象一起创建.缺点是当依赖对象比较多的时候,参数会比较长.通过反射构造对象的时候,对相同类型的参数处理比较困难.构造方法无法被继承,无法设置默认值.参数数量的变动可能会引起维护上面的不变.
 
      ```xml
@@ -35,7 +35,7 @@
 
    - Set方法注入
 
-     - ![image-20201209134553435](C:\Users\b9082\AppData\Roaming\Typora\typora-user-images\image-20201209134553435.png)
+     - ![image-20201209134553435](.\picture\spring揭秘\image-20201209134553435.png)
 
      - 应为set方法可以命名,会比构造方法好一些,setter方法可以别继承,可以设置默认值,缺点是无法再构造完成后马上进入就绪的状态.
 
@@ -77,7 +77,7 @@
    - 业务对象的构建管理
    - 业务对象之间的依赖绑定
      - 直接编码的方式:在容器中直接用代码管理关系.所有方式的最终方式.
-       - ![image-20201209145322335](C:\Users\b9082\AppData\Roaming\Typora\typora-user-images\image-20201209145322335.png)
+       - ![image-20201209145322335](.\picture\spring揭秘\image-20201209145322335.png)
      - 配置文件的方式,xml的方式最常见.
      - 注解的方式,其实注最终还是编码的方式来确定注入的关系.
 
@@ -85,13 +85,13 @@
 
 1. spring Ioc容器和Ioc provider的关系
    
-   ![image-20201209151641139](C:\Users\b9082\AppData\Roaming\Typora\typora-user-images\image-20201209151641139.png)
+   ![image-20201209151641139](.\picture\spring揭秘\image-20201209151641139.png)
    
 2. spring提供了两种容器类型:BeanFactory和ApplicationContext
 
    - BeanFactory:基础类型IOC容器,提供完整的Ioc服务支持.默认采用延迟初始化策略(懒加载).启动时间快,需要的系统资源少.
    - ApplicationContext:在BeanFactory上构建,;对其进行了功能上的升级,比如事件发布,国际化信息支持等.默认启动时完成所有初始化,需要更多的系统资源.
-   - ![image-20201209152151032](C:\Users\b9082\AppData\Roaming\Typora\typora-user-images\image-20201209152151032.png)
+   - ![image-20201209152151032](.\picture\spring揭秘\image-20201209152151032.png)
 
 3. BeanFactory,BeanDefinitionRegister以及DefaultListtableBeanFactory的关系.
 
@@ -103,7 +103,7 @@
       BeanDefinitionRegistry 接口定义抽象了Bean的注册逻辑。通常情况下，具体的 BeanFactory 实现
       类会实现这个接口来管理Bean的注册。它们之间的关系如图4-3所示
 
-   ![image-20201209160039061](C:\Users\b9082\AppData\Roaming\Typora\typora-user-images\image-20201209160039061.png)
+   ![image-20201209160039061](.\picture\spring揭秘\image-20201209160039061.png)
 
 4. BeanFactory的对象注册与依赖绑定方式
 
@@ -163,7 +163,7 @@
 
 13. Bean的实例化阶段
 
-    1. ![image-20201210162931583](C:\Users\b9082\AppData\Roaming\Typora\typora-user-images\image-20201210162931583.png)
+    1. ![image-20201210162931583](.\picture\spring揭秘\image-20201210162931583.png)
     2. 对于BeanFactory使用的是Bean的懒加载策略,只到A被请求bean或者间接请求,间接是指有依赖到Bean时候.
     3. 虽然是通过BeanDefinition取得实例化信息,通过反射就能创建对象实例,但是并不是直接返回的对象实例,而是BeanWrapper对构造完成的对象实例进行包裹.返回相应的BeanWrapper.进行包裹为的就是第二步设置对象属性.
     4. BeanWarpperImpl实现类作用是对每个Bean实现包裹,设置或者获取Bean的属性,BeanWarpperImpl间接继承了PropertyEditorRegitry,会将注册信息传递给wrapper.
@@ -238,8 +238,6 @@
 
 1. Spring Aop的joinpoint是面向方法的,如果想面向属性,则需要借助AspectJ.
 
-2. spring AOP当MethodMatcher为false时候,表示不考虑joinpoint的方法参数. 
-
 3. PointCut中有两个方法,匹配类型的匹配和方法的匹配.
 
    1. ```java
@@ -275,19 +273,21 @@
 
    spring最主要的支持就是方法的拦截.
 
-6. pointcut族谱
+5. pointcut族谱
 
    ![1608558348213](C:\Users\liubt\AppData\Roaming\Typora\typora-user-images\1608558348213.png)
 
-7. 常见的pointcut
+6. 常见的pointcut
 
    1. 
 
-8. 可以通过交集或者并集的方式组合pointcut.
+7. 可以通过交集或者并集的方式组合pointcut.
 
-9. 常见的PonitCut
+8. 常见的PonitCut
    - NameMatchMethodPointCut
      - 属于StaticMethodMatcherPointcut的子类,可以根据自身指定的方法名和Jointpoint处的方法名称进行匹配.但是无法对重载的方法进行匹配.
+
+9. pointcut在Spring中可以作为一个普通的Bean,配置在xml中.
 
 10. 前置通知可以用来检测文件的位置是否存在.
 
@@ -297,9 +297,9 @@
 
 13. per-class类型的Advice,即会在目标类所有对象实例之间共享.per-instance:spring Aop中Introduction是唯一一种.不改动目标类定义的情况下,为目标类添加新的属性和行为.
 
-14. ![image-20201219115741835](C:\Users\b9082\AppData\Roaming\Typora\typora-user-images\image-20201219115741835.png)
+14. ![image-20201219115741835](.\picture\spring揭秘\image-20201219115741835.png)
 
-15. ![image-20201219115529841](C:\Users\b9082\AppData\Roaming\Typora\typora-user-images\image-20201219115529841.png)
+15. ![image-20201219115529841](.\picture\spring揭秘\image-20201219115529841.png)
 
 16. IntroductionAdvisor 只能用于类级别的拦截.
 
