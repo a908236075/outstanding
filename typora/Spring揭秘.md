@@ -295,21 +295,29 @@
 
 12. AfterReturnAdvice:只有方法正常返回的情况下,才会被执行,并且它不能更改返回值,所以不适合在方法中定义清理资源的这类功能,典型的使用地方是当数据处理完成后,会向数据库添加成功的信息,可以做这种场景的使用.
 
-13. per-class类型的Advice,即会在目标类所有对象实例之间共享.per-instance:spring Aop中Introduction是唯一一种.不改动目标类定义的情况下,为目标类添加新的属性和行为.
+13. per-class类型的Advice,即会在目标类所有对象实例之间共享.这种类型的Advice通常只提供方法的拦截,不会为类保存状态 或者添加新的属性.per-instance:spring Aop中Introduction是唯一一种.不改动目标类定义的情况下,为目标类添加新的属性和行为.
 
 14. ![image-20201219115741835](.\picture\spring揭秘\image-20201219115741835.png)
 
 15. ![image-20201219115529841](.\picture\spring揭秘\image-20201219115529841.png)
 
-16. IntroductionAdvisor 只能用于类级别的拦截.
+16. Aspect在Spring中是Advisor,作用是将Pointcut和Advice结合.
 
-17. 当有多个横切逻辑的时候,需要指定他们的优先级,如果没有指定,则按照配置文件声明的顺序,谁先在前谁先执行.多个横切逻辑有时候会因为顺序发生异常.
+17. 通过methodInceptor的invoke方法的methodInvocation参数,我们可以控制对相应joinpoint的拦截行为.通过调用methodInvocation的process方法可以使程序继续的执行.
 
-18. ProxyFactory是一个织入器.ProxyFactoryBean容器中的织入器.
+18. IntroductionAdvisor 只能用于类级别的拦截.
 
-19. SpringAOP二代其实底层使用的还是一代.
+19. 当有多个横切逻辑的时候,需要指定他们的优先级,如果没有指定,则按照配置文件声明的顺序,谁先在前谁先执行.多个横切逻辑有时候会因为顺序发生异常.
 
-20. 注解的方式advice的顺序是,谁先声明谁先执行,但是后置advice,谁先声明,谁就是最后执行优先.
+20. ProxyFactory是一个织入器.ProxyFactoryBean容器中的织入器.
 
-21. 测试提交
+21. AdvisedSupport是生成代理对象所需要的信息的载体.一类是ProxyConfig为统领,承载生成代理对象的控制信息,另一类以Advised为旗帜,承载生成代理对象所需要的信息,如advice,advisor等.
+
+22. 通过jdk动态代理生成的代理类,需要强转为实现的接口,因为只有接口才有和横切逻辑,当使用Cglib的方式,代理的对象就要转成实体类,因为他是通过类进行增强的.
+
+23. SpringAOP二代其实底层使用的还是一代.
+
+24. 注解的方式advice的顺序是,谁先声明谁先执行,但是后置advice,谁先声明,谁就是最后执行优先.
+
+25. 测试提交
 
