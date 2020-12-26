@@ -278,11 +278,11 @@
 
 5. pointcut族谱
 
-   ![1608558348213](C:\Users\liubt\AppData\Roaming\Typora\typora-user-images\1608558348213.png)
+   ![image-20201226173753955](.\picture\spring揭秘\image-20201226173753955.png)
 
 6. 常见的pointcut
 
-   1. 
+   1. ![image-20201226173941374](.\picture\spring揭秘\image-20201226173941374.png)
 
 7. 可以通过交集或者并集的方式组合pointcut.
 
