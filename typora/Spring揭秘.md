@@ -66,7 +66,7 @@
    1. spring是单例模式的,如果没有IOC,每一个都要编写单例的方法.
    2. 对于Bean的**依赖管理**,如果类A依赖B,C,D类,不需要一个一个的new这样耦合在代码的方式,通过IOC可以实现Bean的管理和解耦.
 
-4. Autowired注解相当于在xml中写了一个Bean注解,Autowired注入成员变量(写在类名上)，利用set方法注入，要等类加载完了才注入bean.
+4. Autowired注解相当于在xml中写了一个constructarg或者property(看它放的位置),Autowired注入成员变量(写在类名上)，利用set方法注入，要等类加载完了才注入bean.
 
    Autowired注入构造方法中，利用构造器注入，有先后依赖关系.
 
@@ -84,9 +84,9 @@
 ### 第四章 Spring的IOC容器之BeanFactory
 
 1. spring Ioc容器和Ioc provider的关系
-   
+
    ![image-20201209151641139](.\picture\spring揭秘\image-20201209151641139.png)
-   
+
 2. spring提供了两种容器类型:BeanFactory和ApplicationContext
 
    - BeanFactory:基础类型IOC容器,提供完整的Ioc服务支持.默认采用延迟初始化策略(懒加载).启动时间快,需要的系统资源少.
@@ -113,9 +113,9 @@
      - properties
      - xml    **spring读取xml配置文件的过程?**
        -  set方法,构造函数方法,
-       - list,set,map 复杂数据结构的封装.各种标签的介绍.
-       - byName和byType自动绑定,不用我们手写class类,省去了一些代码量,但是类型唯一时候才能保证成功.
-       - lazy-init 主要针对application容器设置延时初始化.
+       -  list,set,map 复杂数据结构的封装.各种标签的介绍.
+       -  byName和byType自动绑定,不用我们手写class类,省去了一些代码量,但是类型唯一时候才能保证成功.
+       -  lazy-init 主要针对application容器设置延时初始化.
    - 注解方式.注解注入其实是使用注解的方式进行构造器注入或者set注入。使用哪种方式注入,通过位置来判断,如果@autowired在构造方法上就是使用了构造器注入的.**这里需要区分Bean注入的方式和Bean注册方式的区别.**注解的方式其实是Bean注册方式的一种.注册是管理的类之前的关系,注入关注的是类的生成.
      - Bean的scope
        - 单例 与IOC容器拥有相同的寿命.
@@ -125,7 +125,7 @@
 
 5. Bean的Scope:配置中的Bean可以看多是模板,容器会根据他们构造对象,的说那是要创建多少个,构造完成后对象实例存活多久,则是由容器根据Bean的scope语义来决定的.
 
-6. 注意:GOF的单例模式和spring的Singleton模式是不同的,标记为Singleton的bean是由容器来保证这类的bean在同一个容器中只存在一个共享实例;而Singleton模式则是保证同一个ClassLoader中只存在一个这种类型的实例.而设计模式中，我们是对构造方法私有化，进行单例模式，用户从而不能new多个实例。
+6. 注意:GOF的单例模式和spring的Singleton模式是不同的,标记为Singleton的bean是由容器来保证这类的bean在同一个容器中只存在一个共享实例;Singleton模式则是保证同一个ClassLoader中只存在一个这种类型的实例.而设计模式中，我们是对构造方法私有化，进行单例模式，用户从而不能new多个实例。
 
 7. 单例:容器中只存在一个共享的实例.存活时间:从容器启动,到它第一次被请求实例化开始,只要是容器不销毁或者退出,改Bean就会一直存活.多例:每次请求都会创建一个全新的对象,只负责创建,后期的对象的生命周期由请求方来维护.
 
@@ -170,7 +170,7 @@
 
 14. BeanPostProcessor
 
-    1. 存在于对象实例化阶段,注意与BeanFactorPostProcess则是存在于容器的启动阶段.与BeanFactoryPostProcess管理BeanDefinition类似的是,BeanPostProcessor管理的实例化后的对象.
+    1. 存在于对象实例化阶段,注意与BeanFactoryPostProcess则是存在于容器的启动阶段.与BeanFactoryPostProcess管理BeanDefinition类似的是,BeanPostProcessor管理的实例化后的对象.
     2. 各种aware接口就是在这postProcessBeforeInitialization处理的.
     3. Spring的AOP功能就是用BeanPostProcess来为对象生成相应的**代理对象**.
 
@@ -179,10 +179,13 @@
    16. 实现BeanPostProcessor接口,重写BeforeInitialization
 
    17. 将自定义的processor注册到容器.
+
        - 对于BeanFactory使用configurableBeanFactory.addBeanProcessor方法
        - 对于Application则作为一个Bean配置在xml中就可以了.
+
 - InitializingBean和init-method 对于那些实例化后仍需要更改bean属性的需求.例如计算股市信息去除周六日.InitializingBean是一个接口,init-method则在xml配置有限执行的方法.
        
+
 18. Bean的销毁
 
     1. BeanFactory容器  调用ConfigurableBeanFactory提供的destroySingletons()的方法.
@@ -201,7 +204,7 @@
 
 1. @Autowired :与在xml中定义autowire="bytype",按照类型进行注入,可以定义在方法和属性上面.定义子构造方法上就是通过构造方法注入的,定义在属性上就是通过set方法注入的.
 2. 使用@Autowired ,容器会遍历bean,如果符合注入的类的类型,就可以从当前容器管理的对象中获取符合条件的对象,设置给@Autowired所标注的属性域,构造方或者方法的定义.
-3.  @Quality :和@Autowired搭配使用,可以通过名称进行注入.直接点名从容器中要我们需要的对象.
+3. @Quality :和@Autowired搭配使用,可以通过名称进行注入.直接点名从容器中要我们需要的对象.
 4. @ Resource :通过名称进行注入.
 5. @PostConstruct和@PreDestroy不是服务于依赖注入的,而是生命周期相关的方法,这与Spring的InitializingBean和DisposableBean接口,以及配置项中,init-method和destory-method起到类似的作用.
 6. 使用注解其实是类似使用自定义的BeanPostProcess,需要将注解对应的AutowiredAnnotationBeanPostProcessor,必须在配置文件中使用<context:annotation-config>配置开启注解.,开启包扫描的注解<context:component-scan>也注入了这个process.
@@ -238,7 +241,7 @@
 
 1. Spring Aop的joinpoint是面向方法的,如果想面向属性,则需要借助AspectJ.
 
-3. PointCut中有两个方法,匹配类型的匹配和方法的匹配.
+2. PointCut中有两个方法,匹配类型的匹配和方法的匹配.
 
    1. ```java
       public interface Pointcut {    
@@ -247,7 +250,7 @@
           MethodMatcher getMethodMatcher();}
       ```
 
-4. ```java
+3. ```java
    public interface ClassFilter {
        ClassFilter TRUE = TrueClassFilter.INSTANCE;
    
@@ -257,7 +260,7 @@
 
    ClassFilter比较简单,就是判断类型是否匹配,如果匹配了就返回true;
 
-5. ~~~java
+4. ~~~java
    public interface MethodMatcher {
        MethodMatcher TRUE = TrueMethodMatcher.INSTANCE;
    
@@ -284,6 +287,7 @@
 7. 可以通过交集或者并集的方式组合pointcut.
 
 8. 常见的PonitCut
+
    - NameMatchMethodPointCut
      - 属于StaticMethodMatcherPointcut的子类,可以根据自身指定的方法名和Jointpoint处的方法名称进行匹配.但是无法对重载的方法进行匹配.
 
@@ -319,5 +323,37 @@
 
 24. 注解的方式advice的顺序是,谁先声明谁先执行,但是后置advice,谁先声明,谁就是最后执行优先.
 
-25. 测试提交
+25. 让spring扫描切面的注解,在配置文件中配置
+
+    1. ```xml
+       <aop:aspectj-autoproxy proxy-target-class="true">
+       ```
+
+    2. 使用上面的配置,可以达到基于DTD的配置方式中,直接声明AnnotationAwareAspectJAutoProxyCreator相同的效果.
+    
+26. 在AspectJ中,this指代调用方法一方所在的对象,target指代被调用方法所在的对象.而**在Spring AOP中,this指代的是目标对象的代理对象,而target如其名指的是目标对象.**
+
+27. execute和within都能定义Pointcut的jointpoint.
+
+28. 当Advice声明在不同的Aspect内的时候,需要实现Ordered接口,通过getOrder()方法来判断,越小优先级越高.否则,advice的执行顺序是不确定的.
+
+29. 通过自动代理机制处理横切逻辑到目标对象的织入,是28条说明的样子,但是当通过编程的方式处理时,advice由添加到AspectJProxyFactory的顺序来决定的.
+
+30. 最新的xml配置都是基于schema的格式.
+
+31. ```xml
+    <apo:config proxy-target-class="false">
+    	<aop:pointcut></aop:pointcut>    
+        <aop:advisor></aop:advisor>
+        <aop:aspect></aop:aspect>
+    </aop:config>
+    ```
+
+    pointcout,advisor,aspect顺序必须是这样.
+
+32. Around Advice必须要结合ProceedingjoniPoint类型进行使用.
+
+33. **内部方法调用失败的问题:**当目标对象中原始方法调用依赖其它对象,那没问题,可以为目标对象注入所依赖的对象的代理,但是当目标对象中的原始方法调用直接调用自身方法的时候,也就是说,它依赖于自身所定义的其它方法的时候,就会出现找不到依赖方法的异常.因为method1调用的是TargetObject对象上的method2,而不是ProxyObject上的method2增强过的方法.
+
+    1. 解决:在调用自身的方法的时候,使用AOPContext.curretnProxy()调用,并设置weaver.setExposeProxy(true);
 
