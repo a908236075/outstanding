@@ -392,7 +392,27 @@
    - Not_Supported:不支持当前事务,而是没有事务的情况下直接执行,如果当前存在事物的话,原则上被挂起.
    - Never;不需要事务,存在事务就抛出异常.
    - Nested:如果存在事务,则在当前事务的一个嵌套事务中执行,如果没有,创建新的事物,但是他创建的事务不同于Required_New,他比外层的事务优先级有低,而Required_New创建的事务是与外层事务等级相同的,创建的时候外层事务是挂起的状态.适用于将一个大事务分解成多个小事务处理的场景.
-7. 介绍了Spring各种时代事务的配置方式.现在常用的是@Transaction注解
+7. 介绍了Spring各种时代事务的配置方式.现在常用的是@Transaction注解,在里面可以定义事务的传播行为和事务的隔离度,还可以通过xml用<tx></tx>进行配置.
+   1. ![image-20210103125257642](.\picture\spring揭秘\image-20210103125257642.png)
 8. ThreadLocal:不需要管理多个线程共享,但是需要多个线程进行传递的资源,例如JDBC连接Connection,需要将资源绑定到线程上.避免多个线程同时访问出现混乱.它与线程绑定.ThreadLocal工具类底层就是一个相当于一个Map,key存放的当前线程,value存放需要共享的数据.
 9. 分布式事务,涉及到ResourceManager,XAResource,TransactionManager三者直接的交互实现分布式事务.
+
+---
+
+### 第二十二章
+
+1. JSP:将Servlet中的视图渲染逻辑以独立的单元抽取出来.
+2. 控制器,模型,视图三者配合实现数据展示.控制器需要根据配置文件找到请求与页面的配置关系.
+3. ![image-20210103221028161](.\picture\spring揭秘\image-20210103221028161.png)
+
+   - HandlerMapping:定义了每个请求对应访问的Controller.
+   - ViewResolver和View:将视图内容按照字节和字符分为两种类型.View来处理视图内容的具体工作,而ViewResolver类似于HandleMapping功能,记录了视图的对应的关系.
+4. 通过一个例子演示了如何配置.
+
+### 第二十四章 近距离接触Spring MVC主要角色
+
+1. ![image-20210106162538865](.\picture\spring揭秘\image-20210106162538865.png)
+
+2. HandlerMapping主要是根据配置,为url找到对应的Controller类,SpringMVC的web应用中,我们为DispatchServlet提供多个Handler,按照优先级进行匹配,如果HandlerMapping能够返回不可用的Handler,继续向下查找.知道找到可用的Handler.
+   1. 
 
