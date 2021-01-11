@@ -412,7 +412,8 @@
 ### 第二十四章 近距离接触Spring MVC主要角色
 
 1. ![image-20210106162538865](.\picture\spring揭秘\image-20210106162538865.png)
-
 2. HandlerMapping主要是根据配置,为url找到对应的Controller类,SpringMVC的web应用中,我们为DispatchServlet提供多个Handler,按照优先级进行匹配,如果HandlerMapping能够返回不可用的Handler,继续向下查找.知道找到可用的Handler.
-   1. 
-
+3. ViewResolver作用为DispatchServlet返回一个可以的view.
+4. HandleMapping不仅仅是返回Controller这这一种类型,为了能够找到对应的Handler来处理,使用了HandlerAdapter来找到他们的关系.
+5. HandlerAdaptor的主要工作知识调用这个HandlerAdaptor"认识"的Handler的web请求处理方法,然后将处理结果转换为DisaptcherServlet统一使用的ModelAndView.其实就是适配器模式.
+6.   HandlerInterceptor在可以设置在页面渲染之前执行的方法和渲染之后执行的方法,它的父类其实HandleMapping.配置xml的时候也是配置在HandlerInterceptor之下的.
