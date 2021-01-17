@@ -417,3 +417,14 @@
 4. HandleMapping不仅仅是返回Controller这这一种类型,为了能够找到对应的Handler来处理,使用了HandlerAdapter来找到他们的关系.
 5. HandlerAdaptor的主要工作知识调用这个HandlerAdaptor"认识"的Handler的web请求处理方法,然后将处理结果转换为DisaptcherServlet统一使用的ModelAndView.其实就是适配器模式.
 6.   HandlerInterceptor在可以设置在页面渲染之前执行的方法和渲染之后执行的方法,它的父类其实HandleMapping.配置xml的时候也是配置在HandlerInterceptor之下的.
+
+---
+
+### 第三十一章 Spring中任务的调度和线程池的支持
+
+1. Quart:任务调度框架
+2. SimpleAsyncTaskExecutor:提供最基础的异步执行能力,而实现的方式则是为每个任务创建新的线程.可以设置线程数的上限.
+3. ThreadPoolTaskExecutor:为每一个任务创建线程非常的耗费资源.所以需要使用线程池来管理.允许对线程池中的参数做一些设置.
+4. 其实这一章主要讲的就是定时任务调度.
+5. Spring Remoting:因为想要远程调用服务,会涉及到很多交互细节,不能将他们全都交给业务对象(服务端或者客户端),所以需要将此业务进行剥离,产生了Spring Remoting这种对象.
+6. 
