@@ -91,3 +91,34 @@ blackHander:负责配置异常的结果.
    2. Transaction Coordinator (TC):事务协调器,维护全局事务的运行状态,负责协调并驱动全局事务的提交和回滚.
    3. Transaction Manager(TM):控制全局事务的边界,负责开启一个全局事务,并最终发起全局提交和全局回滚的决议.
    4. Resource Manager(RM):控制分支事务,负责分支注册,状态汇报,并接收事务的协调指令,驱动分支事务的提交和回滚.
+
+---
+
+## Spring cloud 微服务实战
+
+#### 第一章 基础知识
+
+1. 将单体服务拆分为微服务,可以使模块相互的独立,不会影响其他服务,且能准确的评估性能容量.
+
+2. actuator
+
+   - 自动监控各个端点状态,例如配置文件的变化,系统内存的资源等.依赖如下
+
+   ~~~xml
+   <dependency>
+               <groupId>org.springframework.boot</groupId>
+               <artifactId>spring-boot-starter-actuator</artifactId>
+   </dependency>
+   ~~~
+
+#### 第三章 服务治理 Eureka
+
+#### 第四章 客户端负载均衡 Ribbon
+
+1. Ribbon为客户端负载均衡,Nginx和zuul是服务端的负载均衡.这是由于服务清单锁存储的位置决定的.
+2. jdk URI的相关知识.
+
+
+
+
+

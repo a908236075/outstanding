@@ -15,10 +15,10 @@
    3. 拷贝命令:退出编辑命令:p 拷贝当前行 yy5  并按p,复制5行.
    4. 删除当前行 dd,删除当先向下5行 5dd
    5. 在文件中查找某个单词:/+关键词  按n查找下一个
-   6. 设置和取消文件行号:set un和set nonu.
+   6. 设置和取消文件行号:set nu和set nonu.
    7. 文件最末行:G,文件首行gg.
-   8. 在文件中输入内容,退出编辑模式,按u撤销刚刚的编辑.
-   9. :+行号可以跳转到指定的地方.
+   8. 在文件中输入内容,退出编辑模式**,按u撤销刚刚的编辑.**
+   9. :行号      可以跳转到指定的地方.
 3. 用户管理和组
    1. 创建一个用户并切换:
       1. useradd talent
@@ -38,30 +38,46 @@
 
    3. 文件目录类
       1. pwd 当前目录
+      
       2. touch 创建一个空目录.
+      
       3. cp -r 可以拷贝整个文件夹.如果有覆盖每个文件都会提示,为了不让他提示我们可以使用\cp -r 拷贝命令.
+      
       4. rm -rf  不光可以删除文件还可以删除文件夹
+      
       5. cat -n 文件 | more  : 适合读取小文件,以只读的形式读取文件,-n为显示行号,more的命令可以让你按按空格显示更多.
+      
       6. more 文本过滤器  以页的形式进行显,适用于读取文件内容较多的.
+      
       7. less 分屏查看内容 对于大文件显示更快.快捷键:回车 下一行 空格下一页
-      8.  '>'输出重定向  >> 追加到文件中.">" 会覆盖原来的内容
-      9. head  显示文件的开头内容. head -n 5 /etc/profile   默认10行
-      10. tail  显示文件的后面的内容 默认为10行 tail -f 文件  时时监控文件所有的更新.
-      11. history  查看历史命令 !+命令号 直接执行对应的命令.
+      
+      8. 由于more用上下键进行切换,所以用less实现了这个功能,less is more
+      
+      9. '>'输出重定向  >> 追加到文件中.">" 会覆盖原来的内容
+   
+      10. head  显示文件的开头内容. head -n 5 /etc/profile   默认10行
+      
+      11. tail  显示文件的后面的内容 默认为10行 tail -f 文件  时时监控文件所有的更新.
+      
+          1. ~~~shell
+             tail -n 100 -f copyAndWrite.sh
+             ~~~
+      
+      12. history  查看历史命令 !+命令号 直接执行对应的命令.
       
    4. 时间日期类
       
-      1. date 显示时间  date -s 字符串时间 设置系统的时间
+      1. date 显示时间  date -s 字符串时间     设置系统的时间
       
    5. 搜索查找类
-
-      1. find 路径 名称/size/user  查找文件的名称/大小/用户   例如 find /home -name "*.sh"
+   
+      1. find **路径** 名称/size/user  查找文件的名称/大小/用户   例如 find /home -name "*.sh"
          1. 常用为-name 和-size
    2. grep  管道命令  cat b.txt | grep -n  a
    
 6. 压缩文件命令
    
-      1. gzip/gunzip  不会保留原文件的解压.
+      1. gzip/gunzip  不会保留原文件的解压. 只能压缩文件,不能压缩目录.
       2. zip/unzip     zip -r mypackage.zip /home/    unzip -d /opt/tmp/  mypackage.zip
    3. tar打包命令  tar  -zcvf mytar.gz /home  将home打包到mytar.gz中. tar   -zxvf为解压命令. 
    
@@ -194,24 +210,27 @@
 11. 判断语句
 
     1. ```shell
-       if[ 23 -gt 24]
+       if [ 23 -gt 24 ]
        then 
        	echo "大于"
        fi	
-       ```
-
-    2. [ ]里面写条件,then后加匹配了条件后要执行的语句,最后加上fi.
-
-    3. -e 判断文件是否存在
-
+       #注意空格!!!
+```
+       
+2. [ ]里面写条件,then后加匹配了条件后要执行的语句,最后加上fi.
+    
+3. ((  23  >  24 )) 等价于 [ 23 -gt 24 ]
+    
+    4. -e 判断文件是否存在
+    
        1. ~~~shell
           if [ -e home/bbb.txt ]
           then 
-          	echo "存在!"
+      	echo "存在!"
           	fi
           ~~~
-
-    4. 常用的比较字符
+    
+    5. 常用的比较字符
        = 字符串比较
     
        -lt 小 于
@@ -249,7 +268,7 @@
 13. for语句
 
     1. ~~~shell
-       ## 100以内的整数和
+       ## 100以内的整数和  
        SUM=0;
        for((i=0;i<=100;i++))
        do
@@ -275,7 +294,24 @@
        esac
        ~~~
 
-       
+#### 实际工作遇到的语句
+
+1. ~~~shell
+   # 检查是否安装过mysql
+   rpm -qa | grep mysql
+   # 查询mysql位置
+   whereis mysql
+   ~~~
+
+2. 查看mysql 6612端口号是否被占用
+
+   - ~~~shell
+     ps -ef | grep 6612 | grep -v grep | awk 'NR==1 { print $2 }'
+     # grep -v grep 去掉包含grep的进程行
+     # awk 'NR==1 { print $2 }' 抽取第一行 打印第二列 即为占用此端口的pid
+     #启动 mysql
+     ./mysql.sh  start
+     ~~~
 
 
 
