@@ -25,7 +25,11 @@
 
 6. @ImportSource 导入资源 例如自定义一个xml,默认并没有加载,用此注解导入.
 
-7. @ConfigurationProperties(prefix ="mycar") 配置文件中编辑了mycar相关的属性,就能自动将配置文件中的属性读取,并封装在类上面.此注解要结合@component注解一起使用.或者在主启动类上使用@EnableAutoConfiguration(Car.class)
+7. @ConfigurationProperties(prefix ="mycar") 配置文件中编辑了mycar相关的属性,就能自动将配置文件中的属性读取,并封装在类上面.此注解要结合@component注解一起使用.或者在**配置类**上使用@EnableAutoConfiguration(Car.class)两种等价的方法,方便引入第三方的包.
+
+   1. ### @Component + @ConfigurationProperties
+
+   2.   **@EnableConfigurationProperties + @ConfigurationProperties**
 
 8. ```java
    @SpringBootApplication
@@ -38,4 +42,29 @@
 9. Spring会默认配置很多配置类,如果用户自己配置了就使用用户自己的,例如注解 @ConditionalOnMissingBean.每个配置有默认的配置文件 XXXProperties(是以类的形式存储的配置信息)
    XXXAutoConfiguration -------------->组件-------------->XXXProperties------->application.properties
    所以我们最后在application.properties中定义的属性值是生效的.
+
 10. 在application的配置文件中配置debug=true 开启自动配置报告  进行配置分析
+
+### Web
+
+1. 只要静态资源放在类路径下： called `/static` (or `/public` or `/resources` or `/META-INF/resources`
+
+   访问 ： 当前项目根路径/ + 静态资源名
+
+2. ~~~yaml
+   spring:
+     mvc:
+       static-path-pattern: /res/**
+     resources:
+       static-locations: [classpath:/haha/]
+   ~~~
+
+3. 配置欢迎页和自定义Favicon
+
+   1. ~~~yaml
+      spring:
+      #  mvc:
+      #    static-path-pattern: /res/**   这个会导致 欢迎页 和 Favicon 功能失效
+      ~~~
+
+4. 
