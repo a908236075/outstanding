@@ -196,4 +196,43 @@
          }
          ~~~
 
-      3. 
+   5. 参数处理
+
+      1. HandlerMapping中找到能处理请求的Handler（Controller.method()）
+      2. 为当前Handler 找一个适配器 HandlerAdapter； **RequestMappingHandlerAdapter**
+      3. 适配器执行目标方法并确定方法参数的每一个值.
+
+   6. 找到Handler 找到adapter 就去执行handle方法.
+
+      ```java
+      mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
+      ```
+
+   7. handle方法里面,遇到了参数argumentResolvers,里面保存了所有的**参数解析器**.同理有方法的返回值处理器.
+
+   8. ```java
+      mav = invokeHandlerMethod(request, response, handlerMethod); //执行目标方法
+      //ServletInvocableHandlerMethod
+      Object returnValue = invokeForRequest(webRequest, mavContainer, providedArgs);
+      //获取方法的参数值 
+      Object[] args = getMethodArgumentValues(request, mavContainer, providedArgs);
+      ```
+
+   9. Map<String,Object> map,  Model model, HttpServletRequest request 都是可以给request域中放数据，request.getAttribute();
+
+   10. 处理参数
+
+      1. **WebDataBinder binder = binderFactory.createBinder(webRequest, attribute, name);**
+
+      **WebDataBinder :web数据绑定器，将请求参数的值绑定到指定的JavaBean里面**
+
+      **WebDataBinder 利用它里面的 Converters 将请求数据转成指定的数据类型。再次封装到JavaBean中**
+
+      
+
+      ​	2. **GenericConversionService：在设置每一个值的时候，找它里面的所有converter那个可以将这个数据类型（request带来参数的字符串）转换到指定的类型（JavaBean -- Integer）**
+
+      **byte -- > file**
+
+   12. 
+
