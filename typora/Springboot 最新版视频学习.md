@@ -215,4 +215,49 @@
                 }
             ~~~
    
-5. #### 数据相应于内容协商
+5. #### 数据响应与内容协商
+
+   1. ~~~java
+      try {		// 处理返回值的方法
+      			this.returnValueHandlers.handleReturnValue(
+      					returnValue, getReturnValueType(returnValue), mavContainer, webRequest);
+      		}
+      ~~~
+
+   2. 遍历**返回值处理器**判断是否支持这种类型返回值 supportsReturnType
+
+   3. 返回值处理器调用 handleReturnValue 进行处理
+
+   4. RequestResponseBodyMethodProcessor 可以处理返回值标了@ResponseBody 注解的。
+
+      1. 内容协商（浏览器默认会以请求头的方式告诉服务器他能接受什么样的内容类型）
+      2. 服务器最终根据自己自身的能力，决定服务器能生产出什么样内容类型的数据，
+      3. SpringMVC会挨个遍历所有容器底层的 HttpMessageConverter ，看谁能处理？
+         - 得到MappingJackson2HttpMessageConverter可以将对象写为json
+         - 利用MappingJackson2HttpMessageConverter将对象转为json再写出去。
+
+6. #### 内容协商
+
+   1. 内容协商原理
+
+      1. 判断当前响应头中是否已经有确定的媒体类型。MediaType
+      2. **获取客户端（PostMan、浏览器）支持接收的内容类型。（获取客户端Accept请求头字段）【application/xml】**
+         - **contentNegotiationManager 内容协商管理器 默认使用基于请求头的策略**
+      3.  遍历循环所有当前系统的 **MessageConverter**，看谁支持操作这个对象（Person） 
+      4.  找到支持操作Person的converter，把converter支持的媒体类型统计出来。 
+      5.  客户端需要【application/xml】。服务端能力【10种、json、xml】 
+      6.  进行内容协商的最佳匹配媒体类型 
+      7.  用 支持 将对象转为 最佳匹配媒体类型 的converter。调用它进行转化 。 
+
+   2. 默认的**媒体协商策略**是只需要改变请求头中Accept字段。Http协议中规定的，告诉服务器本客户端可以接收的数据类型。 我们可以使用**参数方式内容协商策略**功能.
+
+      1. ~~~yaml
+         spring:
+             contentnegotiation:
+             favor-parameter: true  #开启请求参数内容协商模式
+         ~~~
+
+      2. 发送请求   http://localhost:8080/test/person?format=json 或 [http://localhost:8080/test/person?format=](http://localhost:8080/test/person?format=json)xml
+
+      3. **参数策略优先于媒体协商策略**,最终将我们定义的格式返回.
+
