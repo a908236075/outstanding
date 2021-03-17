@@ -121,7 +121,7 @@
        static-locations: [classpath:/haha/]
    ~~~
 
-3. 配置欢迎页和自定义Favicon
+3. #### 配置欢迎页和自定义Favicon
 
    1. ~~~yaml
       spring:
@@ -129,6 +129,7 @@
       #    static-path-pattern: /res/**   这个会导致 欢迎页 和 Favicon 功能失效
       ~~~
 
+<<<<<<< HEAD
 4. 默认资源处理的代码
 
    1. ~~~java
@@ -290,5 +291,197 @@
 
       **byte -- > file**
 
-   12. 
+4. #### 请求映射原理
+
+   1. 请求由HttpServletBean的doGet方法处理,Httpservlet处理是所有请求的父类,最后走到实现方法DispatchServlet的doService的**dodispatch方法**中.
+
+        ![request请求](.\picture\springboot 最新版学习\request请求.png)
+
+   2. doDispatch方法中会**寻找handle**r,也就是请求路径对应的controller.method,所有的handler多会被注册在registerHandler中,最终进行循环遍历匹配.默认的为requestMappingHandlerMapping.
+   
+   3. 为当前handler找到一个**适配器**,handlerAdapter,默认为RequestMappingHandlerMappingAdapter,适配器执行目标方法,确定参数的每一个值.
+   
+   4. **参数解析器-HandlerMethodArgumentResolver**,SpringMVC目标方法能写多少种参数,取决于有多少种参数解析器.例如 **ServletRequestMethodArgumentResolver** 处理HttpServletRequest 请求.
+      
+      1. **复杂参数:** **Map、Model类型的参数**，会返回 mavContainer.getModel（）；---> BindingAwareModelMap 是Model 也是Map 
+      
+   5. **返回值处理器**
+   
+        1. modleAndViewContain将数据取出来,从新封装了modleAndView中包含了参数和视图,
+   
+        2. ```xml
+             调用各自 HandlerMethodArgumentResolver 的 resolveArgument 方法即可
+             ```
+   
+   6. 处理派发结果
+   
+      1.  **processDispatchResult**(processedRequest, response, mappedHandler, mv, dispatchException); 
+   
+      2.  renderMergedOutputModel(mergedModel, getRequestToExpose(request), response); 
+   
+      3. ~~~java
+         InternalResourceView：
+         @Override
+         	protected void renderMergedOutputModel(
+         			Map<String, Object> model, HttpServletRequest request, HttpServletResponse response) throws Exception {
+         
+         		// Expose the model object as request attributes.
+         		exposeModelAsRequestAttributes(model, request);
+         
+         		// Expose helpers as request attributes, if any.
+         		exposeHelpers(request);
+         
+         		// Determine the path for the request dispatcher.
+         		String dispatcherPath = prepareForRendering(request, response);
+         
+         		// Obtain a RequestDispatcher for the target resource (typically a JSP).
+         		RequestDispatcher rd = getRequestDispatcher(request, dispatcherPath);
+         		if (rd == null) {
+         			throw new ServletException("Could not get RequestDispatcher for [" + getUrl() +
+         					"]: Check that the corresponding file exists within your web application archive!");
+         		}
+         
+         		// If already included or response already committed, perform include, else forward.
+         		if (useInclude(request, response)) {
+         			response.setContentType(getContentType());
+         			if (logger.isDebugEnabled()) {
+         				logger.debug("Including [" + getUrl() + "]");
+         			}
+         			rd.include(request, response);
+         		}
+         
+         		else {
+         			// Note: The forwarded resource is supposed to determine the content type itself.
+         			if (logger.isDebugEnabled()) {
+         				logger.debug("Forwarding to [" + getUrl() + "]");
+         			}
+         			rd.forward(request, response);
+         		}
+         	}
+         ~~~
+   
+      4. ~~~java
+         // 暴露模型作为请求域属性
+         // Expose the model object as request attributes.
+         exposeModelAsRequestAttributes(model, request);
+         ~~~
+   
+      5. ~~~java
+         protected void exposeModelAsRequestAttributes(Map<String, Object> model,
+         			HttpServletRequest request) throws Exception {
+         
+             //model中的所有数据遍历挨个放在请求域中
+         		model.forEach((name, value) -> {
+         			if (value != null) {
+         				request.setAttribute(name, value);
+         			}
+         			else {
+         				request.removeAttribute(name);
+         			}
+         		});
+         	}
+         ~~~
+   
+   7. POJO封装过程
+   
+      1.  **ServletModelAttributeMethodProcessor** 这个参数解析器进行解析
+   
+      2. **WebDataBinder binder = binderFactory.createBinder(webRequest, attribute, name);**
+   
+      3. **WebDataBinder :web数据绑定器，将请求参数的值绑定到指定的JavaBean里面**.
+   
+      4. **WebDataBinder 利用它里面的 Converters 将请求数据转成指定的数据类型。再次封装到JavaBean中**
+   
+      5. **GenericConversionService：在设置每一个值的时候，找它里面的所有converter那个可以将这个数据类型（request带来参数的字符串）转换到指定的类型（JavaBean -- Integer）**
+   
+         **byte -- > file**
+   
+      6. 自定义conversion
+   
+         1. 未来我们可以给WebDataBinder里面放自己的Converter；
+   
+         2. **private static final class** StringToNumber<T **extends** Number> **implements** Converter<String, T>
+   
+         3. 重写WebMvcConfigurer中addFormatter方法.
+   
+         4. ~~~java
+                //1、WebMvcConfigurer定制化SpringMVC的功能
+                @Bean
+                public WebMvcConfigurer webMvcConfigurer(){
+                    return new WebMvcConfigurer() {
+                        @Override
+                        public void configurePathMatch(PathMatchConfigurer configurer) {
+                            UrlPathHelper urlPathHelper = new UrlPathHelper();
+                            // 不移除；后面的内容。矩阵变量功能就可以生效
+                            urlPathHelper.setRemoveSemicolonContent(false);
+                            configurer.setUrlPathHelper(urlPathHelper);
+                        }
+            
+                        @Override
+                        public void addFormatters(FormatterRegistry registry) {
+                            registry.addConverter(new Converter<String, Pet>() {
+            
+                                @Override
+                                public Pet convert(String source) {
+                                    // 啊猫,3
+                                    if(!StringUtils.isEmpty(source)){
+                                        Pet pet = new Pet();
+                                        String[] split = source.split(",");
+                                        pet.setName(split[0]);
+                                        pet.setAge(Integer.parseInt(split[1]));
+                                        return pet;
+                                    }
+                                    return null;
+                                }
+                            });
+                        }
+                    };
+                }
+            ~~~
+   
+5. #### 数据响应与内容协商
+
+   1. ~~~java
+      try {		// 处理返回值的方法
+      			this.returnValueHandlers.handleReturnValue(
+      					returnValue, getReturnValueType(returnValue), mavContainer, webRequest);
+      		}
+      ~~~
+
+   2. 遍历**返回值处理器**判断是否支持这种类型返回值 supportsReturnType
+
+   3. 返回值处理器调用 handleReturnValue 进行处理
+
+   4. RequestResponseBodyMethodProcessor 可以处理返回值标了@ResponseBody 注解的。
+
+      1. 内容协商（浏览器默认会以请求头的方式告诉服务器他能接受什么样的内容类型）
+      2. 服务器最终根据自己自身的能力，决定服务器能生产出什么样内容类型的数据，
+      3. SpringMVC会挨个遍历所有容器底层的 HttpMessageConverter ，看谁能处理？
+         - 得到MappingJackson2HttpMessageConverter可以将对象写为json
+         - 利用MappingJackson2HttpMessageConverter将对象转为json再写出去。
+
+6. #### 内容协商
+
+   1. 内容协商原理
+
+      1. 判断当前响应头中是否已经有确定的媒体类型。MediaType
+      2. **获取客户端（PostMan、浏览器）支持接收的内容类型。（获取客户端Accept请求头字段）【application/xml】**
+         - **contentNegotiationManager 内容协商管理器 默认使用基于请求头的策略**
+      3.  遍历循环所有当前系统的 **MessageConverter**，看谁支持操作这个对象（Person） 
+      4.  找到支持操作Person的converter，把converter支持的媒体类型统计出来。 
+      5.  客户端需要【application/xml】。服务端能力【10种、json、xml】 
+      6.  进行内容协商的最佳匹配媒体类型 
+      7.  用 支持 将对象转为 最佳匹配媒体类型 的converter。调用它进行转化 。 
+
+   2. 默认的**媒体协商策略**是只需要改变请求头中Accept字段。Http协议中规定的，告诉服务器本客户端可以接收的数据类型。 我们可以使用**参数方式内容协商策略**功能.
+
+      1. ~~~yaml
+         spring:
+             contentnegotiation:
+             favor-parameter: true  #开启请求参数内容协商模式
+         ~~~
+
+      2. 发送请求   http://localhost:8080/test/person?format=json 或 [http://localhost:8080/test/person?format=](http://localhost:8080/test/person?format=json)xml
+
+      3. **参数策略优先于媒体协商策略**,最终将我们定义的格式返回.
 
