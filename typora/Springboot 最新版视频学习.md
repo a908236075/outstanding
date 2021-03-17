@@ -51,6 +51,62 @@
 
 10. 在application的配置文件中配置debug=true 开启自动配置报告  进行配置分析
 
+#### yaml
+
+1. 属性封装
+
+   1. ~~~java
+      @Data
+      public class Person {
+      	
+      	private String userName;
+      	private Boolean boss;
+      	private Date birth;
+      	private Integer age;
+      	private Pet pet;
+      	private String[] interests;
+      	private List<String> animal;
+      	private Map<String, Object> score;
+      	private Set<Double> salarys;
+      	private Map<String, List<Pet>> allPets;
+      }
+      
+      @Data
+      public class Pet {
+      	private String name;
+      	private Double weight;
+      }
+      ~~~
+
+   2. ~~~yaml
+      # yaml表示以上对象
+      person:
+        userName: zhangsan
+        boss: false
+        birth: 2019/12/12 20:12:33
+        age: 18
+        pet: 
+          name: tomcat
+          weight: 23.4
+        interests: [篮球,游泳]
+        animal: 
+          - jerry
+          - mario
+        score:
+          english: 
+            first: 30
+            second: 40
+            third: 50
+          math: [131,140,148]
+          chinese: {first: 128,second: 136}
+        salarys: [3999,4999.98,5999.99]
+        allPets:
+          sick:
+            - {name: tom}
+            - {name: jerry,weight: 47}
+          health: [{name: mario,weight: 47}]
+      ~~~
+
 ### Web
 
 1. 只要静态资源放在类路径下： called `/static` (or `/public` or `/resources` or `/META-INF/resources`
