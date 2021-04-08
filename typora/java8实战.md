@@ -213,3 +213,134 @@
       ~~~
 
 
+# 第三部分
+
+## 第八章
+
+1. 可以用Arrays.asList(1,2,3)快速的生成集合,但是所生成的集合不能更改.
+
+2. list.replaceAll和boolean b = numList1.removeIf(x -> x.equals(2));java8引入的新方法,可以更方便的操作集合.
+
+3. 操作Map  
+
+   1. ~~~java
+      // 直接遍历Map的Key和Value
+      ageOfFriends.forEach((friend, age) -> System.out.println(friend + " is " +age + " years old"));
+      ~~~
+
+   2. ~~~java
+      // 通过Map的key排序
+      favouriteMovies
+      .entrySet()
+      .stream()
+      .sorted(Entry.comparingByKey())
+      .forEach(System.out::println);
+      ~~~
+
+   3.  **getOrDefault** 以接受的第一个参数作为键，第二个参数作为默认值（在 Map 中找不到指定的键时，该默认值会作为返回值).
+
+   4.   **computeIfAbsent** ——如果指定的键没有对应的值（没有该键或者该键对应的值是空），那么使用该键计算新的值，并将其添加到 Map 中；
+      computeIfPresent ——如果指定的键在 Map 中存在，就计算该键的新值，并将其添加到 Map 中；
+      compute ——使用指定的键计算新的值，并将其存储到 Map 中。
+
+   5. favouriteMovies.**remove**(key, value); map中直接删除元素.**removeIf**方法也支持
+
+   6. **replace**和**replaceAll**
+
+## 第九章 重构 测试和调试
+
+1. 取代匿名类
+
+   1. 首先，匿名类和 Lambda表达式中的 this 和 super 的含义是不同的。在匿名类中， this 代表的是类自身，但是在 Lambda中，它代表的是包含类。其次，匿名类可以屏蔽包含类的变量，而 Lambda表达式不能.
+
+   2. 尝试使用静态的方法
+
+      1. ~~~java
+         inventory.sort((Apple a1, Apple a2) -> a1.getWeight().compareTo(a2.getWeight()));
+         // 第二种更好
+         inventory.sort(comparing(Apple::getWeight));
+         ~~~
+
+   3. 尝试使用归约操作
+
+      1. ~~~java
+         int totalCalories =menu.stream().map(Dish::getCalories)
+             .reduce(0, (c1, c2) -> c1 + c2);
+         // 第二种更好
+         int totalCalories = menu.stream().collect(summingInt(Dish::getCalories));
+         ~~~
+
+   4. **peek** 可以输出流操作前和操作后的值.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
