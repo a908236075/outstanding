@@ -1,12 +1,53 @@
 # 第一部分
 
-## 第一章
-
 1.  Java从函数式编程引入的两个核心思想：将方法和 Lambda作为一等值，以及
    在没有可变共享状态时，函数或方法可以有效、安全地并行执行。
-2.  只定义一个抽象方法的的接口被称为**函数式接口**;
-3.  如果一个类上面标记有**@FunctionalInterface**,就说明他是一个函数式接口,编译器会进行检验,并报错.
-4.  函数式接口中的任何一个都**不允许**抛出**受检异常**.
+   
+2. 只定义一个抽象方法的的接口被称为**函数式接口**;
+
+3. 用函数式接口可以干什么呢？Lambda 表达式允许你直接以**内联的形式**为函数式接口的抽象方法提供实现，并把整个表达式作为函数式接口的实例（具体说来，是函数式接口一个具体实现的实例）。
+
+   1. ~~~java
+      // 使用内联的方式
+      Runnable r1 = () -> System.out.println("Hello World 1");
+      // 使用匿名类
+      Runnable r2 = new Runnable(){
+      public void run(){
+      System.out.println("Hello World 2");
+      }
+      };
+      ~~~
+
+4. 方法调用的返回值为空时，Java语言规范有一条特殊的规定。这种情况下，你不需要使用括号环绕返回值为空的单行方法调用.
+
+   1. ~~~java
+      // 常规写法
+      process(() -> { System.out.println("This is awesome"); });
+      // 特殊规定后的写法
+      process(() -> System.out.println("This is awesome"));
+      ~~~
+
+5. 如果一个类上面标记有**@FunctionalInterface**,就说明他是一个函数式接口,编译器会进行检验,并报错.
+
+6. 函数式接口中的任何一个都**不允许**抛出**受检异常**.
+
+7. lambda表达式调用局部变量时:但局部变量必须显式声明为 final ，或**事实上是 final** 。换句话说，Lambda表达式只能捕获指派给它们的局部变量一次。
+
+   1. ~~~java
+      int portNumber = 1337;
+      Runnable r = () -> System.out.println(portNumber);
+      portNumber = 31337; // 错误：Lambda 表达式引用的局部变量必须是最终的（ final ）或事实上最终的
+      ~~~
+
+   2.  原因是:如果 Lambda可以直接访问局部变量，而且 Lambda是在一个线程中使用的，则使用 Lambda的线程，可能会在分配该变量的**线程将这个变量收回之后，去访问该变量**.第二个原因是如果不做限制会影响到并发.
+
+8.  方法引用是指lambda表达式的缩写
+
+    1.  方法引用主要有三类。
+        (1) 指向**静态方法的方法**引用（例如 Integer 的 parseInt 方法，写作 Integer::parseInt ）。
+        (2) 指向**任意类型实例方法**的方法引用（例如 String 的 length 方法，写作 String::length ）。
+        (3) 指向**现存对象或表达式实例方法**的方法引用（假设你有一个局部变量 expensive Transaction。
+    2.  第二种方法引用的思想是你在引用一个对象的方法.第三种方法引用主要用在你需要在 Lambda 中调用一个现存外部对象的方法时。Lambda 表达式 ()->expensiveTransaction.getValue() 可以重写为 expensiveTransaction::getValue 。第三种方法引用在你需要传递一个私有辅助方法时特别有用。
 
 # 第二部分 
 
@@ -217,7 +258,7 @@
 
 ## 第八章
 
-1. 可以用Arrays.asList(1,2,3)快速的生成集合,但是所生成的集合不能更改.
+1. 可以用Arrays.asList(1,2,3)快速的生成集合,但是所生成的集合**不能更改**.
 
 2. list.replaceAll和boolean b = numList1.removeIf(x -> x.equals(2));java8引入的新方法,可以更方便的操作集合.
 
@@ -271,6 +312,26 @@
          ~~~
 
    4. **peek** 可以输出流操作前和操作后的值.
+
+## 第十二章  新的日期和时间API
+
+1. ~~~java
+   // 指定格式的格式化时间
+   LocalDateTime time2 = LocalDateTime.of(2021, 12, 12, 12, 12, 12);
+           DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+   String time = localDateTime.format(dateTimeFormatter);
+   ~~~
+
+2. **localDate** 是日期的 例如2021-04-09 **localTime**  是处理时间的 例如 10:55:51 他们都可以通过**of**方法创建.
+
+3. 日期和时间的合并    date.**atTime**(12,24,12)   time.**atDate**(date)  .通过atTime 和atDate的方法实现相互的转换,也可以通过 **LocalDateTime.of**(date,time) 来实现直接创建时间.
+
+## 第十三章 默认方法
+
+1. 当需要向接口中添加方法时,所有的实现此接口的类都需要被动的改变,为了避免这一情况,java8提供了两种的解决方法其一，Java 8允许在接口内声明**静态方法**。其二，Java 8引入了一个新功能，叫**默认方法**,通过默认方
+   法你可以指定接口方法的默认实现。换句话说，**接口能提供方法的具体实现**。因此，实现接口的类如果不显式地提供该方法的具体实现，就会**自动继承默认的实现**。
+2. 默认方法使用**default**关键字.
+3. **并发与并行**这两种算法的差异。并发是一种编程属性（重叠地执行），即使在单核的机器上也可以执行，而并行是执行硬件的属性（同时执行）。
 
 
 
