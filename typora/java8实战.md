@@ -53,17 +53,19 @@
 
 ## 第四章
 
-1. 常见的流操作
+1. 什么是**流**: 流是 Java API的新成员，它允许你以声明性方式处理数据集合（通过查询语句来表达，而不是临时编写一个实现）。
 
-   - filter ——接受一个 Lambda，从流中排除某些元素。在本例中，通过传递 Lambda  d ->
+2. 常见的流操作
+
+   - **filter** ——接受一个 Lambda，从流中排除某些元素。在本例中，通过传递 Lambda  d ->
      d.getCalories() > 300 ，选择出热量超过 300卡路里的菜肴。
      
-   - map ——接受一个 Lambda，将元素转换成其他形式或提取信息。在本例中，通过传递方
+   - **map** ——接受一个 Lambda，将元素转换成其他形式或提取信息。在本例中，通过传递方
      法引用 Dish::getName ，相当于 Lambda d -> d.getName() ，提取了每道菜的菜名。
      
-   - limit ——截断流，使其元素不超过给定数量。
+   - **limit** ——截断流，使其元素不超过给定数量。
 
-   - collect ——将流转换为其他形式。在本例中，流被转换为一个列表。
+   - **collect** ——将流转换为其他形式。在本例中，流被转换为一个列表。
 
    - ~~~java
      List<String> names = menu.stream()
@@ -75,7 +77,7 @@
 
    -  
 
-2. 流只能消费一次
+3. 流只能消费一次
 
    1. ~~~java
       List<String> title = Arrays.asList("Modern", "Java", "In", "Action");
@@ -84,7 +86,7 @@
       s.forEach(System.out::println);  //java.lang.IllegalStateException:
       ~~~
 
-3. 使用流
+4. 使用流
 
    1. ~~~java
       // distinct 
@@ -120,7 +122,7 @@
 
    6. 对流中每一个元素应用函数 map
 
-   7.  flatMap 方法让你把一个流中的每个值都换成另一个流，然后把所有的流连接起来成为一个流。
+   7.  **flatMap** 方法让你把一个流中的每个值都换成另一个流，然后把所有的流连接起来成为一个流。
 
       1. ~~~java
          List<String> uniqueCharacters =
@@ -173,7 +175,7 @@
              .sum();		
              ~~~
 
-       2. 转换回对象流  boxed()
+       2. 转换回对象流  **boxed()**
 
           1. ~~~java
              IntStream intStream = menu.stream().mapToInt(Dish::getCalories);
@@ -237,7 +239,7 @@
 
       1. String shortMenu = menu.stream().map(Dish::getName).collect(joining(", ")); 也可以不加分隔符.
 
-   5. reduce 和collect的比较  reduce适合于不变值,collect适合于在动态的变值规约.
+   5. reduce 和collect的比较   reduce 方法旨在把两个值结合起来生成一个新值，它是一个不可变的归约。reduce适合于不变值,collect适合于在动态的变值规约.
 
       1. ~~~java
          // reduce
@@ -286,6 +288,11 @@
 
    5. favouriteMovies.**remove**(key, value); map中直接删除元素.**removeIf**方法也支持
 
+      1. ~~~java
+         // 有条件的删除
+         movies.entrySet().removeIf(entry -> entry.getValue() < 10);
+         ~~~
+   
    6. **replace**和**replaceAll**
 
 ## 第九章 重构 测试和调试
