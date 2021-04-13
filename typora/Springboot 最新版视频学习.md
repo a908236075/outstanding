@@ -129,17 +129,71 @@
       #    static-path-pattern: /res/**   这个会导致 欢迎页 和 Favicon 功能失效
       ~~~
 
-<<<<<<< HEAD
 4. 默认资源处理的代码
 
-   1. ~~~java
+   1. Springboot启动的时候回默认加载WebMvcAutoConfiguration这个是和SpringMVC相关的配置类。
+      
+   2. 一般碰见**EnableConfigurationProperties**时候是可以配置文件进行绑定，也就在application.yaml中就可以是配置的属性生效.例如**WebMvcProperties**,是以spring.mvc开头的配置属性.
+
+   3. 只有一个有参构造器
+
+      1. ~~~java
+           //有参构造器所有参数的值都会从容器中确定
+         
+         //ResourceProperties resourceProperties；获取和spring.resources绑定的所有的值的对象
+         
+         //WebMvcProperties mvcProperties 获取和spring.mvc绑定的所有的值的对象
+         
+         //ListableBeanFactory beanFactory Spring的beanFactory
+         
+         //HttpMessageConverters 找到所有的HttpMessageConverters
+         
+         //ResourceHandlerRegistrationCustomizer 找到 资源处理器的自定义器。=========
+         
+         //DispatcherServletPath  
+         
+         //ServletRegistrationBean   给应用注册Servlet、Filter....
+         
+             public WebMvcAutoConfigurationAdapter(ResourceProperties resourceProperties, WebMvcProperties mvcProperties,
+         
+                         ListableBeanFactory beanFactory, ObjectProvider<HttpMessageConverters> messageConvertersProvider,
+         
+                         ObjectProvider<ResourceHandlerRegistrationCustomizer> resourceHandlerRegistrationCustomizerProvider,
+         
+                         ObjectProvider<DispatcherServletPath> dispatcherServletPath,
+         
+                         ObjectProvider<ServletRegistrationBean<?>> servletRegistrations) {
+         
+                     this.resourceProperties = resourceProperties;
+         
+                     this.mvcProperties = mvcProperties;
+         
+                     this.beanFactory = beanFactory;
+         
+                     this.messageConvertersProvider = messageConvertersProvider;
+         
+                     this.resourceHandlerRegistrationCustomizer = resourceHandlerRegistrationCustomizerProvider.getIfAvailable();
+         
+                     this.dispatcherServletPath = dispatcherServletPath;
+         
+                     this.servletRegistrations = servletRegistrations;
+         
+                 }
+         ~~~
+
+      2. ##### 资源处理的默认规则
+
+      ~~~java
       protected void addResourceHandlers(ResourceHandlerRegistry registry) {
                   super.addResourceHandlers(registry);
+          		// add-mapping false  可以禁用静态资源的访问
                   if (!this.resourceProperties.isAddMappings()) {
                       logger.debug("Default resource handling disabled");
                   } else {
                       ServletContext servletContext = this.getServletContext();
                       this.addResourceHandler(registry, "/webjars/**", "classpath:/META-INF/resources/webjars/");
+                      // 如果访问的路径是/** 则去加载this.resourceProperties.getStaticLocations()这个路径,为默认配置四个路径: "classpath:/META-INF/resources/",
+      				"classpath:/resources/", "classpath:/static/", "classpath:/public/"
                       this.addResourceHandler(registry, this.mvcProperties.getStaticPathPattern(), (registration) -> {
                           registration.addResourceLocations(this.resourceProperties.getStaticLocations());
                           if (servletContext != null) {
@@ -151,9 +205,67 @@
               }
       ~~~
 
-   2. rest分隔需要在springboot中配置开启:
+   4. ##### 配置欢迎页
 
-      1. ~~~yaml
+      1. ~~~java
+         //  HandlerMapping：处理器映射。保存了每一个Handler能处理哪些请求。  
+         @Bean
+         public WelcomePageHandlerMapping welcomePageHandlerMapping(ApplicationContext applicationContext,
+         				FormattingConversionService mvcConversionService, ResourceUrlProvider mvcResourceUrlProvider) {
+             // 欢迎页的配置路径this.mvcProperties.getStaticPathPattern() 必须是/**
+         			WelcomePageHandlerMapping welcomePageHandlerMapping = new WelcomePageHandlerMapping(
+         					new TemplateAvailabilityProviders(applicationContext), applicationContext, getWelcomePage(),
+         					this.mvcProperties.getStaticPathPattern());
+         			welcomePageHandlerMapping.setInterceptors(getInterceptors(mvcConversionService, mvcResourceUrlProvider));
+         			welcomePageHandlerMapping.setCorsConfigurations(getCorsConfigurations());
+         			return welcomePageHandlerMapping;
+         		}
+         ~~~
+
+   5. #### rest分隔需要在springboot中配置开启:
+
+      1. SpringMVC默认开启了方法过滤
+
+         1. ~~~java
+            // 当没有HiddenHttpMethodFilter时候生效
+            // spring.mvc.hiddenmethod.filter 为enabled时候生效 需要配置在文件中配置
+            // matchIfMissing=false 表示配置了就生效不会忽略
+            @Bean
+            @ConditionalOnMissingBean(HiddenHttpMethodFilter.class)
+            @ConditionalOnProperty(prefix = "spring.mvc.hiddenmethod.filter", name = "enabled", matchIfMissing = false)
+            	public OrderedHiddenHttpMethodFilter hiddenHttpMethodFilter() {
+            		return new OrderedHiddenHttpMethodFilter();
+            	}
+            ~~~
+
+         2. ##### 方法断点进入HiddenHttpMethodFilter的doFilterInternal方法中
+
+            1. ~~~java
+               @Override
+               protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+               			throws ServletException, IOException {
+               
+               		HttpServletRequest requestToUse = request;
+               		// 必须为post请求才会处理
+               		if ("POST".equals(request.getMethod()) && request.getAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE) == null) {
+                           // this.methodParam 即使封装的属性 _method
+               			String paramValue = request.getParameter(this.methodParam);
+               			if (StringUtils.hasLength(paramValue)) {
+               				String method = paramValue.toUpperCase(Locale.ENGLISH);
+                // 判断是否为允许的请求   Collections.unmodifiableList(Arrays.asList(HttpMethod.PUT.name(),
+               //					HttpMethod.DELETE.name(), HttpMethod.PATCH.name())); 
+                               // patch做局部更新的请求
+               				if (ALLOWED_METHODS.contains(method)) {
+               					requestToUse = new HttpMethodRequestWrapper(request, method);
+               				}
+               			}
+               		}
+               
+               		filterChain.doFilter(requestToUse, response);
+               	}
+               ~~~
+
+      2. ~~~yaml
          spring:
            # rest 风格请求的编写
            mvc:
@@ -162,10 +274,11 @@
                  enabled: true
          ~~~
 
-      2. 当put请求和delete请求 需要不想用_method封装的时候
+      3. ##### 当put请求和delete请求 需要不想用_method封装的时候
 
          1. ~~~java
             //自定义filter 自定义变量名称为 _m
+            // 例如想要发送delete或者put请求,需要发送post请求 然后携带一个_method属性名为delete
                 @Bean
                 public HiddenHttpMethodFilter hiddenHttpMethodFilter(){
                     HiddenHttpMethodFilter methodFilter = new HiddenHttpMethodFilter();
@@ -174,14 +287,16 @@
                 }
             ~~~
 
-   3. 请求映射原理
+   6. 请求映射原理
 
-      1. ![image-20210304131416974](C:\Users\b9082\AppData\Roaming\Typora\typora-user-images\image-20210304131416974.png)
-      2. 映射路径 :HttpServlet(doGet)  找子类-->HttpServletBean(doGet) -->FrameworkServlet(doGet) 调用了processRequest--->里面调用了doService找它在子类DispatcherServlet的实现调用了-----> doDispatch 分析  mappedHandler = this.getHandler(processedRequest); 方法.
+      1. ![](.\picture\springboot 最新版学习\SpringMVC发送http请求底层执行的方法.png)
+      2. SpringMVC所有请求的开始**DispatchServlet**,HttpServlet是他的父类的父类.
+      3. 映射路径 :HttpServlet(doGet)  找子类-->HttpServletBean(doGet) -->FrameworkServlet(doGet) 调用了processRequest--->里面调用了doService找它在子类DispatcherServlet的实现调用了-----> doDispatch 分析  mappedHandler = this.getHandler(processedRequest); 方法.
          AbstractHandlerMethodMapping  中的  getHandlerInternal  
-      3. 可以学习一下ReentrantReadWriteLock
+      4. 
+      5. 可以学习一下ReentrantReadWriteLock
 
-   4. 普通参数与基本注解
+   7. 普通参数与基本注解
 
       1. @PathVariable、@RequestHeader、@ModelAttribute、@RequestParam、@RequestBody   @MatrixVariable、@CookieValue
 
@@ -253,33 +368,33 @@
          }
          ~~~
 
-   5. 参数处理
+   8. 参数处理
 
       1. HandlerMapping中找到能处理请求的Handler（Controller.method()）
       2. 为当前Handler 找一个适配器 HandlerAdapter； **RequestMappingHandlerAdapter**
       3. 适配器执行目标方法并确定方法参数的每一个值.
 
-   6. 找到Handler 找到adapter 就去执行handle方法.
+   9. 找到Handler 找到adapter 就去执行handle方法.
 
       ```java
       mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
       ```
 
-   7. handle方法里面,遇到了参数argumentResolvers,里面保存了所有的**参数解析器**.同理有方法的返回值处理器.
+   10. handle方法里面,遇到了参数argumentResolvers,里面保存了所有的**参数解析器**.同理有方法的返回值处理器.
 
-   8. ```java
-      mav = invokeHandlerMethod(request, response, handlerMethod); //执行目标方法
-      //ServletInvocableHandlerMethod
-      Object returnValue = invokeForRequest(webRequest, mavContainer, providedArgs);
-      //获取方法的参数值 
-      Object[] args = getMethodArgumentValues(request, mavContainer, providedArgs);
-      ```
+   11. ```java
+       mav = invokeHandlerMethod(request, response, handlerMethod); //执行目标方法
+       //ServletInvocableHandlerMethod
+       Object returnValue = invokeForRequest(webRequest, mavContainer, providedArgs);
+       //获取方法的参数值 
+       Object[] args = getMethodArgumentValues(request, mavContainer, providedArgs);
+       ```
 
-   9. Map<String,Object> map,  Model model, HttpServletRequest request 都是可以给request域中放数据，request.getAttribute();
+   12. Map<String,Object> map,  Model model, HttpServletRequest request 都是可以给request域中放数据，request.getAttribute();
 
-   10. 处理参数
+   13. 处理参数
 
-      1. **WebDataBinder binder = binderFactory.createBinder(webRequest, attribute, name);**
+      14. **WebDataBinder binder = binderFactory.createBinder(webRequest, attribute, name);**
 
       **WebDataBinder :web数据绑定器，将请求参数的值绑定到指定的JavaBean里面**
 
