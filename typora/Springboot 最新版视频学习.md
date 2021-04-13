@@ -129,9 +129,9 @@
       #    static-path-pattern: /res/**   这个会导致 欢迎页 和 Favicon 功能失效
       ~~~
 
-4. 默认资源处理的代码
+4. #### 默认资源处理的代码
 
-   1. Springboot启动的时候回默认加载WebMvcAutoConfiguration这个是和SpringMVC相关的配置类。
+   1. Springboot启动的时候回默认加载**WebMvcAutoConfiguration**这个是和SpringMVC相关的配置类。
       
    2. 一般碰见**EnableConfigurationProperties**时候是可以配置文件进行绑定，也就在application.yaml中就可以是配置的属性生效.例如**WebMvcProperties**,是以spring.mvc开头的配置属性.
 
@@ -139,7 +139,7 @@
 
       1. ~~~java
            //有参构造器所有参数的值都会从容器中确定
-         
+            
          //ResourceProperties resourceProperties；获取和spring.resources绑定的所有的值的对象
          
          //WebMvcProperties mvcProperties 获取和spring.mvc绑定的所有的值的对象
@@ -184,6 +184,7 @@
       2. ##### 资源处理的默认规则
 
       ~~~java
+      // package WebMvcAutoConfiguration
       protected void addResourceHandlers(ResourceHandlerRegistry registry) {
                   super.addResourceHandlers(registry);
           		// add-mapping false  可以禁用静态资源的访问
@@ -192,8 +193,7 @@
                   } else {
                       ServletContext servletContext = this.getServletContext();
                       this.addResourceHandler(registry, "/webjars/**", "classpath:/META-INF/resources/webjars/");
-                      // 如果访问的路径是/** 则去加载this.resourceProperties.getStaticLocations()这个路径,为默认配置四个路径: "classpath:/META-INF/resources/",
-      				"classpath:/resources/", "classpath:/static/", "classpath:/public/"
+                  // 如果访问的路径是/** 则去加载this.resourceProperties.getStaticLocations()这个路径,为默认配置四个路径: "classpath:/META-INF/resources/","classpath:/resources/", "classpath:/static/", "classpath:/public/"
                       this.addResourceHandler(registry, this.mvcProperties.getStaticPathPattern(), (registration) -> {
                           registration.addResourceLocations(this.resourceProperties.getStaticLocations());
                           if (servletContext != null) {
@@ -222,81 +222,85 @@
          		}
          ~~~
 
-   5. #### rest分隔需要在springboot中配置开启:
+5. #### rest分隔需要在springboot中配置开启:只有表单的方式发送请求才需要处理_method参数.
 
-      1. SpringMVC默认开启了方法过滤
+   1. SpringMVC默认开启了方法过滤
+
+      1. ~~~java
+         // 当没有HiddenHttpMethodFilter时候生效
+         // spring.mvc.hiddenmethod.filter 为enabled时候生效 需要配置在文件中配置
+         // matchIfMissing=false 表示配置了就生效不会忽略
+         @Bean
+         @ConditionalOnMissingBean(HiddenHttpMethodFilter.class)
+         @ConditionalOnProperty(prefix = "spring.mvc.hiddenmethod.filter", name = "enabled", matchIfMissing = false)
+         	public OrderedHiddenHttpMethodFilter hiddenHttpMethodFilter() {
+         		return new OrderedHiddenHttpMethodFilter();
+         	}
+         ~~~
+
+      2. ##### 方法断点进入HiddenHttpMethodFilter的doFilterInternal方法中
 
          1. ~~~java
-            // 当没有HiddenHttpMethodFilter时候生效
-            // spring.mvc.hiddenmethod.filter 为enabled时候生效 需要配置在文件中配置
-            // matchIfMissing=false 表示配置了就生效不会忽略
-            @Bean
-            @ConditionalOnMissingBean(HiddenHttpMethodFilter.class)
-            @ConditionalOnProperty(prefix = "spring.mvc.hiddenmethod.filter", name = "enabled", matchIfMissing = false)
-            	public OrderedHiddenHttpMethodFilter hiddenHttpMethodFilter() {
-            		return new OrderedHiddenHttpMethodFilter();
+            @Override
+            protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            			throws ServletException, IOException {
+            
+            		HttpServletRequest requestToUse = request;
+            		// 必须为post请求才会处理
+            		if ("POST".equals(request.getMethod()) && request.getAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE) == null) {
+                        // this.methodParam 即使封装的属性 _method
+            			String paramValue = request.getParameter(this.methodParam);
+            			if (StringUtils.hasLength(paramValue)) {
+            				String method = paramValue.toUpperCase(Locale.ENGLISH);
+             // 判断是否为允许的请求   Collections.unmodifiableList(Arrays.asList(HttpMethod.PUT.name(),
+            //					HttpMethod.DELETE.name(), HttpMethod.PATCH.name())); 
+                            // patch请求是做局部更新的请求
+            				if (ALLOWED_METHODS.contains(method)) {
+            					requestToUse = new HttpMethodRequestWrapper(request, method);
+            				}
+            			}
+            		}
+            
+            		filterChain.doFilter(requestToUse, response);
             	}
             ~~~
 
-         2. ##### 方法断点进入HiddenHttpMethodFilter的doFilterInternal方法中
+   2. ~~~yaml
+      spring:
+        # rest 风格请求的编写
+        mvc:
+          hiddenmethod:
+            filter:
+              enabled: true
+      ~~~
 
-            1. ~~~java
-               @Override
-               protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-               			throws ServletException, IOException {
-               
-               		HttpServletRequest requestToUse = request;
-               		// 必须为post请求才会处理
-               		if ("POST".equals(request.getMethod()) && request.getAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE) == null) {
-                           // this.methodParam 即使封装的属性 _method
-               			String paramValue = request.getParameter(this.methodParam);
-               			if (StringUtils.hasLength(paramValue)) {
-               				String method = paramValue.toUpperCase(Locale.ENGLISH);
-                // 判断是否为允许的请求   Collections.unmodifiableList(Arrays.asList(HttpMethod.PUT.name(),
-               //					HttpMethod.DELETE.name(), HttpMethod.PATCH.name())); 
-                               // patch做局部更新的请求
-               				if (ALLOWED_METHODS.contains(method)) {
-               					requestToUse = new HttpMethodRequestWrapper(request, method);
-               				}
-               			}
-               		}
-               
-               		filterChain.doFilter(requestToUse, response);
-               	}
-               ~~~
+   3. ##### 当put请求和delete请求 需要不想用_method封装的时候
 
-      2. ~~~yaml
-         spring:
-           # rest 风格请求的编写
-           mvc:
-             hiddenmethod:
-               filter:
-                 enabled: true
+      1. ~~~java
+         //自定义filter 自定义变量名称为 _m
+         // 例如想要发送delete或者put请求,需要发送post请求 然后携带一个_method属性名为delete
+             @Bean
+             public HiddenHttpMethodFilter hiddenHttpMethodFilter(){
+                 HiddenHttpMethodFilter methodFilter = new HiddenHttpMethodFilter();
+                 methodFilter.setMethodParam("_m");
+                 return methodFilter;
+             }
          ~~~
 
-      3. ##### 当put请求和delete请求 需要不想用_method封装的时候
+6. #### 请求映射原理
 
-         1. ~~~java
-            //自定义filter 自定义变量名称为 _m
-            // 例如想要发送delete或者put请求,需要发送post请求 然后携带一个_method属性名为delete
-                @Bean
-                public HiddenHttpMethodFilter hiddenHttpMethodFilter(){
-                    HiddenHttpMethodFilter methodFilter = new HiddenHttpMethodFilter();
-                    methodFilter.setMethodParam("_m");
-                    return methodFilter;
-                }
-            ~~~
+   1. ![](.\picture\springboot 最新版学习\SpringMVC发送http请求底层执行的方法.png)
 
-   6. 请求映射原理
+   2. SpringMVC所有请求的开始**DispatchServlet**,HttpServlet是他的父类的父类.
 
-      1. ![](.\picture\springboot 最新版学习\SpringMVC发送http请求底层执行的方法.png)
-      2. SpringMVC所有请求的开始**DispatchServlet**,HttpServlet是他的父类的父类.
-      3. 映射路径 :HttpServlet(doGet)  找子类-->HttpServletBean(doGet) -->FrameworkServlet(doGet) 调用了processRequest--->里面调用了doService找它在子类DispatcherServlet的实现调用了-----> doDispatch 分析  mappedHandler = this.getHandler(processedRequest); 方法.
-         AbstractHandlerMethodMapping  中的  getHandlerInternal  
-      4. 
-      5. 可以学习一下ReentrantReadWriteLock
+   3. 映射路径 :HttpServlet(doGet)  找子类-->HttpServletBean(doGet) -->FrameworkServlet(doGet) 调用了processRequest--->里面调用了doService找它在子类DispatcherServlet的实现调用了-----> **doDispatch** 分析  **mappedHandler = this.getHandler(processedRequest)**; 方法.
+      AbstractHandlerMethodMapping  中的  getHandlerInternal  
+      
+   4. 遍历所有HandlerMapping,根据**URL路径名称和请求的方法(get,post)获取HandlerMapping**,其中**RequestMappingHandlerMapping**把程序中定义的路径都注册进来.welcomeHandlerMapping处理的是**/**的请求.
 
-   7. 普通参数与基本注解
+   5. 可以学习一下ReentrantReadWriteLock
+
+   6. #### 普通参数与基本注解
 
       1. @PathVariable、@RequestHeader、@ModelAttribute、@RequestParam、@RequestBody   @MatrixVariable、@CookieValue
 
@@ -368,193 +372,197 @@
          }
          ~~~
 
-   8. 参数处理
+   7. #### 参数处理原理
 
-      1. HandlerMapping中找到能处理请求的Handler（Controller.method()）
-      2. 为当前Handler 找一个适配器 HandlerAdapter； **RequestMappingHandlerAdapter**
-      3. 适配器执行目标方法并确定方法参数的每一个值.
-
-   9. 找到Handler 找到adapter 就去执行handle方法.
+      1. **总体步骤**
+         1. HandlerMapping中找到能处理请求的Handler（Controller.method()）
+         2. 为当前Handler 找一个适配器 HandlerAdapter； **RequestMappingHandlerAdapter**
+         3. 适配器执行目标方法并确定方法参数的每一个值.
+      2. 找到Handler 找到adapter 就去执行handle方法.
 
       ```java
       mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
       ```
 
-   10. handle方法里面,遇到了参数argumentResolvers,里面保存了所有的**参数解析器**.同理有方法的返回值处理器.
+      3. handle方法里面,遇到了参数argumentResolvers,里面保存了所有的**参数解析器**(例如 如果有@PathVariable就用PathVariableMethodArgumentResolver).同理有方法的返回值处理器.
 
-   11. ```java
-       mav = invokeHandlerMethod(request, response, handlerMethod); //执行目标方法
-       //ServletInvocableHandlerMethod
-       Object returnValue = invokeForRequest(webRequest, mavContainer, providedArgs);
-       //获取方法的参数值 
-       Object[] args = getMethodArgumentValues(request, mavContainer, providedArgs);
-       ```
+         1. ~~~java
+            mav = invokeHandlerMethod(request, response, handlerMethod); //执行目标方法  RequestMappingHandlerAdapter
+            //ServletInvocableHandlerMethod
+            Object returnValue = invokeForRequest(webRequest, mavContainer, providedArgs);
+            //获取方法的参数值 
+            Object[] args = getMethodArgumentValues(request, mavContainer, providedArgs);
+            ~~~
 
-   12. Map<String,Object> map,  Model model, HttpServletRequest request 都是可以给request域中放数据，request.getAttribute();
+      4. 参数解析器
 
-   13. 处理参数
+         1. <img src=".\picture\springboot 最新版学习\参数解析器.png" style="zoom:80%;" />
+         2. 参数解析器接口的方法 判断是否支持  对参数进行解析.
+            1. ![](.\picture\springboot 最新版学习\参数解析器接口的方法.png)
 
-      14. **WebDataBinder binder = binderFactory.createBinder(webRequest, attribute, name);**
+      5. Map<String,Object> map,  Model model, HttpServletRequest request 都是可以给request域中放数据，request.getAttribute();
 
-      **WebDataBinder :web数据绑定器，将请求参数的值绑定到指定的JavaBean里面**
+      6. 处理参数
 
-      **WebDataBinder 利用它里面的 Converters 将请求数据转成指定的数据类型。再次封装到JavaBean中**
+            1. **WebDataBinder binder = binderFactory.createBinder(webRequest, attribute, name);**
 
+                  **WebDataBinder :web数据绑定器，将请求参数的值绑定到指定的JavaBean里面**
+
+                  **WebDataBinder 利用它里面的 Converters 将请求数据转成指定的数据类型。再次封装到JavaBean中**
+
+            ​	2. **GenericConversionService：在设置每一个值的时候，找它里面的所有converter那个可以将这个数据类型（request带来参数的字符串）转换到指定的类型（JavaBean -- Integer）**
+
+   **byte -- > file**
+
+#### 请求映射原理
+
+1. 请求由HttpServletBean的doGet方法处理,Httpservlet处理是所有请求的父类,最后走到实现方法DispatchServlet的doService的**dodispatch方法**中.
+
+     ![request请求](.\picture\springboot 最新版学习\request请求.png)
+
+2. doDispatch方法中会**寻找handle**r,也就是请求路径对应的controller.method,所有的handler多会被注册在registerHandler中,最终进行循环遍历匹配.默认的为requestMappingHandlerMapping.
+
+3. 为当前handler找到一个**适配器**,handlerAdapter,默认为RequestMappingHandlerMappingAdapter,适配器执行目标方法,确定参数的每一个值.
+
+4. **参数解析器-HandlerMethodArgumentResolver**,SpringMVC目标方法能写多少种参数,取决于有多少种参数解析器.例如 **ServletRequestMethodArgumentResolver** 处理HttpServletRequest 请求.
+   
+   1. **复杂参数:** **Map、Model类型的参数**，会返回 mavContainer.getModel（）；---> BindingAwareModelMap 是Model 也是Map 
+   
+5. **返回值处理器**
+
+     1. modleAndViewContain将数据取出来,从新封装了modleAndView中包含了参数和视图,
+
+     2. ```xml
+          调用各自 HandlerMethodArgumentResolver 的 resolveArgument 方法即可
+          ```
+
+6. 处理派发结果
+
+   1.  **processDispatchResult**(processedRequest, response, mappedHandler, mv, dispatchException); 
+
+   2.  renderMergedOutputModel(mergedModel, getRequestToExpose(request), response); 
+
+   3. ~~~java
+      InternalResourceView：
+      @Override
+      	protected void renderMergedOutputModel(
+      			Map<String, Object> model, HttpServletRequest request, HttpServletResponse response) throws Exception {
       
+      		// Expose the model object as request attributes.
+      		exposeModelAsRequestAttributes(model, request);
+      
+      		// Expose helpers as request attributes, if any.
+      		exposeHelpers(request);
+      
+      		// Determine the path for the request dispatcher.
+      		String dispatcherPath = prepareForRendering(request, response);
+      
+      		// Obtain a RequestDispatcher for the target resource (typically a JSP).
+      		RequestDispatcher rd = getRequestDispatcher(request, dispatcherPath);
+      		if (rd == null) {
+      			throw new ServletException("Could not get RequestDispatcher for [" + getUrl() +
+      					"]: Check that the corresponding file exists within your web application archive!");
+      		}
+      
+      		// If already included or response already committed, perform include, else forward.
+      		if (useInclude(request, response)) {
+      			response.setContentType(getContentType());
+      			if (logger.isDebugEnabled()) {
+      				logger.debug("Including [" + getUrl() + "]");
+      			}
+      			rd.include(request, response);
+      		}
+      
+      		else {
+      			// Note: The forwarded resource is supposed to determine the content type itself.
+      			if (logger.isDebugEnabled()) {
+      				logger.debug("Forwarding to [" + getUrl() + "]");
+      			}
+      			rd.forward(request, response);
+      		}
+      	}
+      ~~~
 
-      ​	2. **GenericConversionService：在设置每一个值的时候，找它里面的所有converter那个可以将这个数据类型（request带来参数的字符串）转换到指定的类型（JavaBean -- Integer）**
+   4. ~~~java
+      // 暴露模型作为请求域属性
+      // Expose the model object as request attributes.
+      exposeModelAsRequestAttributes(model, request);
+      ~~~
+
+   5. ~~~java
+      protected void exposeModelAsRequestAttributes(Map<String, Object> model,
+      			HttpServletRequest request) throws Exception {
+      
+          //model中的所有数据遍历挨个放在请求域中
+      		model.forEach((name, value) -> {
+      			if (value != null) {
+      				request.setAttribute(name, value);
+      			}
+      			else {
+      				request.removeAttribute(name);
+      			}
+      		});
+      	}
+      ~~~
+
+7. POJO封装过程
+
+   1.  **ServletModelAttributeMethodProcessor** 这个参数解析器进行解析
+
+   2. **WebDataBinder binder = binderFactory.createBinder(webRequest, attribute, name);**
+
+   3. **WebDataBinder :web数据绑定器，将请求参数的值绑定到指定的JavaBean里面**.
+
+   4. **WebDataBinder 利用它里面的 Converters 将请求数据转成指定的数据类型。再次封装到JavaBean中**
+
+   5. **GenericConversionService：在设置每一个值的时候，找它里面的所有converter那个可以将这个数据类型（request带来参数的字符串）转换到指定的类型（JavaBean -- Integer）**
 
       **byte -- > file**
 
-4. #### 请求映射原理
+   6. 自定义conversion
 
-   1. 请求由HttpServletBean的doGet方法处理,Httpservlet处理是所有请求的父类,最后走到实现方法DispatchServlet的doService的**dodispatch方法**中.
+      1. 未来我们可以给WebDataBinder里面放自己的Converter；
 
-        ![request请求](.\picture\springboot 最新版学习\request请求.png)
+      2. **private static final class** StringToNumber<T **extends** Number> **implements** Converter<String, T>
 
-   2. doDispatch方法中会**寻找handle**r,也就是请求路径对应的controller.method,所有的handler多会被注册在registerHandler中,最终进行循环遍历匹配.默认的为requestMappingHandlerMapping.
-   
-   3. 为当前handler找到一个**适配器**,handlerAdapter,默认为RequestMappingHandlerMappingAdapter,适配器执行目标方法,确定参数的每一个值.
-   
-   4. **参数解析器-HandlerMethodArgumentResolver**,SpringMVC目标方法能写多少种参数,取决于有多少种参数解析器.例如 **ServletRequestMethodArgumentResolver** 处理HttpServletRequest 请求.
-      
-      1. **复杂参数:** **Map、Model类型的参数**，会返回 mavContainer.getModel（）；---> BindingAwareModelMap 是Model 也是Map 
-      
-   5. **返回值处理器**
-   
-        1. modleAndViewContain将数据取出来,从新封装了modleAndView中包含了参数和视图,
-   
-        2. ```xml
-             调用各自 HandlerMethodArgumentResolver 的 resolveArgument 方法即可
-             ```
-   
-   6. 处理派发结果
-   
-      1.  **processDispatchResult**(processedRequest, response, mappedHandler, mv, dispatchException); 
-   
-      2.  renderMergedOutputModel(mergedModel, getRequestToExpose(request), response); 
-   
-      3. ~~~java
-         InternalResourceView：
-         @Override
-         	protected void renderMergedOutputModel(
-         			Map<String, Object> model, HttpServletRequest request, HttpServletResponse response) throws Exception {
-         
-         		// Expose the model object as request attributes.
-         		exposeModelAsRequestAttributes(model, request);
-         
-         		// Expose helpers as request attributes, if any.
-         		exposeHelpers(request);
-         
-         		// Determine the path for the request dispatcher.
-         		String dispatcherPath = prepareForRendering(request, response);
-         
-         		// Obtain a RequestDispatcher for the target resource (typically a JSP).
-         		RequestDispatcher rd = getRequestDispatcher(request, dispatcherPath);
-         		if (rd == null) {
-         			throw new ServletException("Could not get RequestDispatcher for [" + getUrl() +
-         					"]: Check that the corresponding file exists within your web application archive!");
-         		}
-         
-         		// If already included or response already committed, perform include, else forward.
-         		if (useInclude(request, response)) {
-         			response.setContentType(getContentType());
-         			if (logger.isDebugEnabled()) {
-         				logger.debug("Including [" + getUrl() + "]");
-         			}
-         			rd.include(request, response);
-         		}
-         
-         		else {
-         			// Note: The forwarded resource is supposed to determine the content type itself.
-         			if (logger.isDebugEnabled()) {
-         				logger.debug("Forwarding to [" + getUrl() + "]");
-         			}
-         			rd.forward(request, response);
-         		}
-         	}
-         ~~~
-   
+      3. 重写WebMvcConfigurer中addFormatter方法.
+
       4. ~~~java
-         // 暴露模型作为请求域属性
-         // Expose the model object as request attributes.
-         exposeModelAsRequestAttributes(model, request);
-         ~~~
-   
-      5. ~~~java
-         protected void exposeModelAsRequestAttributes(Map<String, Object> model,
-         			HttpServletRequest request) throws Exception {
+             //1、WebMvcConfigurer定制化SpringMVC的功能
+             @Bean
+             public WebMvcConfigurer webMvcConfigurer(){
+                 return new WebMvcConfigurer() {
+                     @Override
+                     public void configurePathMatch(PathMatchConfigurer configurer) {
+                         UrlPathHelper urlPathHelper = new UrlPathHelper();
+                         // 不移除；后面的内容。矩阵变量功能就可以生效
+                         urlPathHelper.setRemoveSemicolonContent(false);
+                         configurer.setUrlPathHelper(urlPathHelper);
+                     }
          
-             //model中的所有数据遍历挨个放在请求域中
-         		model.forEach((name, value) -> {
-         			if (value != null) {
-         				request.setAttribute(name, value);
-         			}
-         			else {
-         				request.removeAttribute(name);
-         			}
-         		});
-         	}
+                     @Override
+                     public void addFormatters(FormatterRegistry registry) {
+                         registry.addConverter(new Converter<String, Pet>() {
+         
+                             @Override
+                             public Pet convert(String source) {
+                                 // 啊猫,3
+                                 if(!StringUtils.isEmpty(source)){
+                                     Pet pet = new Pet();
+                                     String[] split = source.split(",");
+                                     pet.setName(split[0]);
+                                     pet.setAge(Integer.parseInt(split[1]));
+                                     return pet;
+                                 }
+                                 return null;
+                             }
+                         });
+                     }
+                 };
+             }
          ~~~
-   
-   7. POJO封装过程
-   
-      1.  **ServletModelAttributeMethodProcessor** 这个参数解析器进行解析
-   
-      2. **WebDataBinder binder = binderFactory.createBinder(webRequest, attribute, name);**
-   
-      3. **WebDataBinder :web数据绑定器，将请求参数的值绑定到指定的JavaBean里面**.
-   
-      4. **WebDataBinder 利用它里面的 Converters 将请求数据转成指定的数据类型。再次封装到JavaBean中**
-   
-      5. **GenericConversionService：在设置每一个值的时候，找它里面的所有converter那个可以将这个数据类型（request带来参数的字符串）转换到指定的类型（JavaBean -- Integer）**
-   
-         **byte -- > file**
-   
-      6. 自定义conversion
-   
-         1. 未来我们可以给WebDataBinder里面放自己的Converter；
-   
-         2. **private static final class** StringToNumber<T **extends** Number> **implements** Converter<String, T>
-   
-         3. 重写WebMvcConfigurer中addFormatter方法.
-   
-         4. ~~~java
-                //1、WebMvcConfigurer定制化SpringMVC的功能
-                @Bean
-                public WebMvcConfigurer webMvcConfigurer(){
-                    return new WebMvcConfigurer() {
-                        @Override
-                        public void configurePathMatch(PathMatchConfigurer configurer) {
-                            UrlPathHelper urlPathHelper = new UrlPathHelper();
-                            // 不移除；后面的内容。矩阵变量功能就可以生效
-                            urlPathHelper.setRemoveSemicolonContent(false);
-                            configurer.setUrlPathHelper(urlPathHelper);
-                        }
-            
-                        @Override
-                        public void addFormatters(FormatterRegistry registry) {
-                            registry.addConverter(new Converter<String, Pet>() {
-            
-                                @Override
-                                public Pet convert(String source) {
-                                    // 啊猫,3
-                                    if(!StringUtils.isEmpty(source)){
-                                        Pet pet = new Pet();
-                                        String[] split = source.split(",");
-                                        pet.setName(split[0]);
-                                        pet.setAge(Integer.parseInt(split[1]));
-                                        return pet;
-                                    }
-                                    return null;
-                                }
-                            });
-                        }
-                    };
-                }
-            ~~~
-   
-5. #### 数据响应与内容协商
+
+1. #### 数据响应与内容协商
 
    1. ~~~java
       try {		// 处理返回值的方法
@@ -575,7 +583,7 @@
          - 得到MappingJackson2HttpMessageConverter可以将对象写为json
          - 利用MappingJackson2HttpMessageConverter将对象转为json再写出去。
 
-6. #### 内容协商
+2. #### 内容协商
 
    1. 内容协商原理
 
