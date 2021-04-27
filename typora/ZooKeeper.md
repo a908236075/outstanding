@@ -19,7 +19,7 @@
 6. 监视与通知
    1. 每次都要客户端请求获取这种轮询的方式性能不好,所以采用了服务端通知的方式.
    2. 每次通知都是触发了一个监视点.
-      1. ![通过通知的方式进行znode的变化](D:\develop\GitHub\project\outstanding\typora\picture\zookeeper\通过通知的方式进行znode的变化.png)
+1. ![通过通知的方式进行znode的变化](D:\develop\GitHub\project\outstanding\typora\picture\zookeeper\通过通知的方式进行znode的变化.png)
       2. 当第三部的时候,zookeeper又有新的变化,这时客户端会获取最新的值,以保证不会错过状态的变化.
 7. 版本号
    1. 每⼀个znode都有⼀个版本号，它随着每次数据变化⽽⾃增.
@@ -29,4 +29,32 @@
    2. zookeeper集群对声明回话超时负责,而不是客户端.
    3. 当尝试连接到⼀个不同的服务器时，⾮常重要的是，这个服务器的ZooKeeper状态要与最后连接的服务器的ZooKeeper**状态保持最新**。通过zkId进行区分.
    4. **锁**:为了获得⼀个锁，每个进程p尝试创建znode，名为/lock。为了避免出现死锁,我们不得不在创建这个节
-      点时指定/lock为**临时节点。**
+      
+点时**指定/lock为临时节点**。
+      
+      1. ![通过通知的方式进行znode的变化](.\picture\zookeeper\通过通知的方式进行znode的变化.png)
+      2. 当第三步的时候,zookeeper又有新的变化,这时客户端会从新监测服务器,获取最新的值,以保证不会错过状态的变化.
+
+## 第二部分 使用zookeeper进行开发
+
+1. ### Zookeeper的API
+
+2. ### 监控
+
+   1. ZooKeeper的API中的所有读操作：getData、getChildren和exists，均可以选择在读取的znode节点上设置监视点。
+   2. 监视数据的变化和监视子节点的变化.
+   3. 某一时刻设置了大量的监视点,会导致尖峰的通知,解决的办法是客户端通过/getChildren方法来获取所有/lock下的⼦节点，并判断⾃⼰创建的节点是否是最⼩的序列号。如果客户端创建的节点不是最⼩序列号，就根据序列号确定序列，并在前⼀个节点上设置监视点。
+      1. 创建/lock/lock-001的客户端获得锁。
+      2. 创建/lock/lock-002的客户端监视/lock/lock-001节点.
+      3. 创建/lock/lock-003的客户端监视/lock/lock-002节点。
+   4. 当一个客户端连接到一个新的服务器上时，watch 将会被以任意会话事件触发。当与一个服务器失去连接的时候，是无法接收到 watch 的。而当 client 重新连接时，如果需要的话，所有先前注册过的 watch，都会被重新注册。通常这是完全透明的。只有在一个特殊情况下，watch 可能会丢失：对于一个未创建的 znode的 exist watch，如果在客户端断开连接期间被创建了，并且随后在客户端连接上之前又删除了，这种情况下，这个 watch 事件可能会被丢失。
+   5. 注册watch
+      1. getData、exists、getChildren
+   6. 触发watch
+      1. create、delete、setData
+
+3. ### 故障处理
+
+4. ### 注意事项
+
+   1. 
