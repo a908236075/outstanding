@@ -71,7 +71,7 @@
 
 1. zxid为⼀个long型（64位）整数，分为两部分：时间戳（epoch）部分和计数器（counter）部分。
 2. 群首选举
-   1. ![](D:\develop\gitHub\outstanding\typora\picture\zookeeper\群首选举.png)
+   1. ![](D:.\picture\zookeeper\群首选举.png)
 3. Zab状态更新广播协议——ZooKeeper原⼦⼴播协议（ZooKeeper Atomic Broadcast protocol）
    1. 群⾸向所有追随者发送⼀个PROPOSAL消息p
    2. 当⼀个追随者接收到消息p后，会响应群⾸⼀个ACK消息，通知群⾸其已接受该提案（proposal）。
