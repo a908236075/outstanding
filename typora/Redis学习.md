@@ -266,3 +266,16 @@ redis-cli --cluster fix 127.0.0.1:7000
    缩列表 (ziplist) 进行存储.紧凑型没有冗余的空间,每次插入都会realoc扩展内存.
 4. quickList:quicklist 是 ziplist 和 linkedlist 的混合体，它将 linkedlist 按段切分，每一段使用 ziplist 来紧凑存储，多个 ziplist 之间使用双向指针串接起来。默认单个ziplist长度为8k.
 5. 跳跃链表没太看懂.
+
+---
+
+# Redis 设计与实现
+
+## 第一部分 数据结构与对象
+
+1. 简单动态字符串(SDS):
+   1. <img src=".\picture\redis\SDS结构.png" style="zoom:80%;" />
+   2. 空间预分配和惰性空间释放
+2. 链表:当一个列表键包含的数据比较多的时候,Redis 就会使用链表作为列表键的底层实现.
+3. 
+
