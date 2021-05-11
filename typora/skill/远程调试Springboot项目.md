@@ -60,3 +60,41 @@
    - server(y/n):VM是否需要作为调试服务器.
    - suspend(y/n):是否在调试的客户端建立连接后启动VM.
    - address:调试服务器监听的端口号.
+
+### 注意事项
+
+1. 服务器启动的时候可能会报Caused by: java.lang.ClassNotFoundException: org.springframework.scheduling.TaskScheduler 异常 不用管 ,其实服务已经启动了.
+
+2. 查看防火墙状态 以及 关闭防火墙
+
+   1. ~~~shell
+      ## 查看防火墙状态
+      systemctl status firewalld 
+      ~~~
+
+   2. ~~~shell
+      ## 关闭/开启/重启 防火墙
+      service firewalld stop/start/restart
+      systemctl stop firewalld
+~~~
+      
+      
+
+## 实际项目远程debug
+
+1.SpringBoot项目启动时加以下参数
+	-Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=n
+
+​	如：nohup java $jvm_options -Xdebug -Xrunjdwp:transport=dt_socket,address=5005,server=y,suspend=n -Dloader.path=lib,config -jar 		       ${BASE_PATH}/$jarPath --spring.config.location=${CONFIG_DIR},${com_path}/comom_config/application-mysql.yml,${com_path}/comom_config/application-es.yml -> /dev/null 2>&1&
+2.关闭Linux防火墙
+​	systemctl stop firewalld
+
+3.Idea配置远程调试
+​	新建Romote,输入相应的远程IP和端口（默认5005）
+
+注：本地代码需与远程代码保持一致
+
+
+
+
+
