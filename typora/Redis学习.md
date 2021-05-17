@@ -22,6 +22,15 @@ redis-cli --cluster fix 127.0.0.1:7000
       > docker run --name myredis -d -p6379:6379 redis
       # 执行容器中的 redis-cli，可以直接使用命令行操作 redis
       > docker exec -it myredis redis-cli
+      # 或者
+       docker exec -it redis-test /bin/bash
+       ## 如果不成功
+       #启动docker
+      sudo systemctl start docker
+      # 查看启动的镜像
+      docker ps
+      # 启动 redis
+      docker start redis-test
       ~~~
 
 2. Redis的所以的key都是String类型的.不同的是value值的类型不一样.
@@ -116,7 +125,7 @@ redis-cli --cluster fix 127.0.0.1:7000
       1. ~~~shell
          > sadd books python
          (integer) 1
-         > sadd bookspython # 重复
+         > sadd books python # 重复
          (integer) 0
          > sadd books java golang
          (integer) 2
@@ -273,9 +282,104 @@ redis-cli --cluster fix 127.0.0.1:7000
 
 ## 第一部分 数据结构与对象
 
-1. 简单动态字符串(SDS):
+1. ### 简单动态字符串(SDS):
+   
    1. <img src=".\picture\redis\SDS结构.png" style="zoom:80%;" />
-   2. 空间预分配和惰性空间释放
-2. 链表:当一个列表键包含的数据比较多的时候,Redis 就会使用链表作为列表键的底层实现.
-3. 
+   2. 与C语言字符串的比较:
+      - 直接获取保存字符串的长度,不用计算.
+      - 杜绝了缓存溢出同时避免了内存从新分配:因为不记录长度,当有新的字符添加进入的时候,如果使分配的空间不足.
+      - 空间预分配:当有13个字节时候,实际分配给sds的长度为13+13+1=27个,1为结尾\0.
+      - 惰性空间释放:当保存的字符串减小长度的时候,不会马上释放空间,而是等待下一次的使用.
+      - 二进制安全:C语言的字符串只能保存文本,因为视频,图片其他类型转换为二进制会与字符串的结尾相混淆,无法识别出是二进制数据还是字符串的分割符.
+   
+2. ### 链表(List)
 
+   1. 当一个列表键包含的数据比较多的时候,Redis 就会使用链表作为列表键的底层实现.
+   2. 链表一般的结构是前置节点,后置节点和节点的值.
+
+3. ### 字典(Hash)
+
+   1. 由键值对组成  类似于java中的HashMap.
+
+   2. ![](.\picture\redis\Hash字典表结构.png)
+
+   3. 字段解释
+
+       ![](.\picture\redis\Hash字典表字段.png)
+
+   4. 空字典![](.\picture\redis\空字典.png)
+
+   5. 字典表是数组和链表组成![](.\picture\redis\字典数组和链表.png)
+
+   6. 字典表为了避免同时将所有数据进行rehash带来性能损失,采用的是**渐进式的rehash**,同时维护两个字典表,如果旧的没有就去新的里面找.
+
+4. ### 跳跃表
+
+   1. 实现有序集合键和集群节点中做内部数据结构.
+   2. 由zskipList和zskipNode组成,zskipList保存了表头节点,表尾节点和长度.node表示跳跃表节点.
+   3. 每个节点上不仅仅保存了数据对象,还保存了访问另外节点的指针,当访问数据的时候,不用按顺序进行遍历,而是根据指针在节点上快速的跳跃,花费很少的时间就能找到对象.
+   4. 数据结构![](.\picture\redis\跳跃链表的遍历.png)
+   
+5. ### 整数集合
+
+   1. 根据保存数据的类型来创建空间,如果空间大小进行升级或者降级.
+
+6. ### 压缩列表
+
+   1. 当一个列表键只包含少量列表项,并且每个列表项要么是小整型值,要么是比较短的字符串,Redis就会用压缩列表来保存.
+   2. 组成结构:连续的内存块组成的顺序型数据结构.为了节约内存而开发.
+   3. ![](.\picture\redis\压缩列表的组成部分.png)
+   4. ![](.\picture\redis\压缩列表各部分说明.png)
+   5. ![](D:\develop\GitHub\project\outstanding\typora\picture\redis\压缩列表节点组成部分.png)
+   6. 节点的previous_entry_length是上一个节点的长度,根据这个偏移量找到数据的起始位置.
+   7. 由于压缩列表的结构紧凑,当更新数据和删除数据的时候,容易引发**连锁更新**,即一个节点更新内存长度,导致所有的节点都更新内存长度,但是由于保存的都是小数据即使发生也不会产生较大的性能损失.
+
+7. ### 对象
+
+   1. Redis的键都是字符串类型,值有String,list,Hash,Set,Zset五种类型.
+   2. 字符串对象是唯一一种会被其他类型嵌套使用的对象.
+   3. 列表list的底层数据结构有zipList和LinkedList两种,当满足一下条件时候,会自动使用zipList进行存储.
+      - 列表对象保存的所有元素长度都小于64字节.
+      - 元素数量小于512个.
+   4. Hash对象底层数据结构是zipList或者hashtable两种.
+   5. 集合对象(set)的编码可以是inset或者hashtable.
+   6. 有序集合对象(Zset) 编码可以是zipList或者skipList.
+   7. 类型检查和多态.通过类型检查确保命令可以正确的执行,多态是对不同的数据结构可以使用相同的命令操作.例如zipList和hashtable都可以LLEN命令,但是底层的方法是不一样的.
+   8. 内存回收:使用**引用计数法**进行处理.
+
+# 第二部分 单机数据库的实现
+
+1. ### 数据库
+
+   1. 默认创建16个数据库,select index 选择数据库.默认index为0.
+   2. 数据库使用一个字典表记录了所有的键.包括过期的键.
+   3. 过期键删除策略:定时删除,惰性删除,定期删除.redis采用惰性删除和定期删除两种策略.
+   4. RDB会所键过期的检查,过期的键不会做持久化或者数据的恢复.AOF也会做键过期检查,会在日志中增加一个delete删除键的操作.
+   5. 复制 从服务器不会进行过期检查,不处理过期的键.
+
+2. ### RDB持久化
+
+   1. SAVE持久化会阻塞进程,BGSAVE可以派生一个子进程.
+   
+   2. AOF更新的频率比RDB高,服务器优先使用AOF还原数据.
+   
+   3. SAVE可以设置为保存条件.例如900s内对数据进行了一次修改.
+   
+   4. 数据结构
+   
+      ![](D:\develop\GitHub\project\outstanding\typora\picture\redis\RDB数据的大结构.png)![](D:\develop\GitHub\project\outstanding\typora\picture\redis\RDB文件的数据结构.png)
+   
+   5. 文件结构代表的意思:
+   
+      - REDIS:字符,程序载入文件时,快速检查是否为RDB文件
+      - db_version:记录了RDB的版本号.
+      - database:数据结构部分.
+        - SELECTDB:提示程序接下来是数据库版本号.
+        - 0 数据库版本号
+        - pairs:所有键值对 由 EXPIRETIME(有过期时间的键才有) type key value 三或者四部分组成.
+      - EOF:结束标志
+      - check_sum:参数校验和.
+   
+   6. 
+   
+   
