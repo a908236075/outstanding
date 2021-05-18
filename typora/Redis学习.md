@@ -418,5 +418,9 @@ redis-cli --cluster fix 127.0.0.1:7000
 
 2. ### 集群模式
 
-   1. 
+   1. 节点:集群有多个节点组成.使用命令 CLUSTER MEET <ip> <port> 命令 进行握手,加入到集群.
+   2. 集群的数据结构:clusterNode包含了节点的信息,其中保存连接节点所有的有关信息clusterLink *link;clusterLink中又包含了连接节点的信息clusterState在当前节点的视角下,记录了集群目前所处的状态,集群是在线还是下线,集群包含多少个节点,集群当前的配置纪元.包括集群节点名单.
+   3. ![](.\picture\redis\clusterState数据结构.png)
+   4. **槽指派**:一共有16383个槽,通过命令 CLUSTER ADDSLOTS <slot> [slot ....]指派.
+   5. **MOVED错误和ASK错误的区别**:MOVED错误表示槽的负责权已经从一个节点转移到了另一个节点,而ASK错误只是两个节点在迁移槽的过程中使用的一种临时的措施.
 
