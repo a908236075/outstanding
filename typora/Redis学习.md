@@ -427,4 +427,84 @@ redis-cli --cluster fix 127.0.0.1:7000
    7. **ASKING命令**:当客户端携带ASKING标识的时候,会破例执行所对应的命令一次,而不是返回给客户端moved错误.????
    8. **MOVED错误和ASK错误的区别**:MOVED错误表示槽的负责权已经从一个节点转移到了另一个节点,而ASK错误只是两个节点在迁移槽的过程中使用的一种临时的措施.
    9. **复制与故障转移**:半数以上的主节点认为掉线了,就会在给节点上打上fail下线标签.
+   10. 选举新的主节点:当有主节点挂掉的时候,会通知其他主节点对该节点的从节点进行投票,重新选取主节点.
 
+## 第四部分 独立功能的实现
+
+1. ### 发布与订阅
+
+   1. 列表保存了所有的频道,频道对到又对应着客户端的链表,保存了所有订阅此频道的客户端.
+
+2. ### 事务
+
+   1. 通过MULTI,EXEC,WATCH命令来实现事务.
+   2. 事务的实现
+      - 事务开始:multi命令 打开事务的标识
+      - 命令入队:EXEC,DISCARD,WATCH,MULTI四个命令的其中一种,会立即执行,其余命名会放入到队列中去.
+      - 事务的执行:先进先出的队列中拿去命令执行.
+   3. Watch命令的实现
+      1. 是一种乐观锁,它可以在exec命令执行之前,监视任意数量的数据库键,并在Exec命令执行时,检查被监视的键是否至少被修改过了,如果是拒绝执行该事务,并向客户端返回事务失败的回复.
+      2. 如果有修改,表示会被打开,事务执行的时候就会发现.
+   4. ACID事务的原子性,一致性,隔离性,持久性.
+
+3. ### 排序
+
+   1. ~~~shell
+      ## 对numbers list进行排序
+      rpush numbers 5 3 1 2 4
+      sort numbers
+      ## 对字符串进行排序  ALPHA 
+      sadd alphabet a c d b
+      sort alphabet ALPHA
+      ##按元素分值排序
+sadd test-result 3.0 jack 2.0 tom 1.0 lihua
+      srange test-result 0 -1
+      ## 为各元素设置序号
+      mset Peter_number 1 tom_number 2 jack_number 3
+      Sort test-result by *_number
+      ~~~
+      
+   2. 不论是哪种排序,都是将元素先放入到数组中,进行排序.
+   
+   3. 排序可以使用关键字 limit.
+   
+   4. 排序后需要取出特定值 用get
+   
+      1. ~~~shell
+         sort alphabet ALPHA get *_a
+         ~~~
+   
+   5. store:由于sort只对结果进行排序,而不会保存结果,所以可以使用store把结果保存在指定的键中.相当于对结果执行RPUSH命名.
+   
+   6. 排序各字段执行的顺序:
+   
+      - 排序:命令使用ALPHA,ASC,DESC,By选项时候,进行排序.
+      - LIMIT
+      - 获取外部键 GET命令.
+      - 保存排序结果 store
+      - 结果返回
+   
+   7. 进行SORT命名时候,除了Get命令之外,尽是改变选项的顺序并不会影响执行的结果.
+   
+4. ### 二进制位数组
+
+   1. bit 常用命令
+
+      ~~~shell
+      ## 在0的位置设置的为1
+      SETBIT bit 0 1
+      ## 获取第三位的bit值 (0 或者 1)
+      GETBIT bit 3
+      ## 有多少位1 
+      BITCOUNT bit
+      ## 按位与
+      BITOP AND and-result x y z
+      ##按位或
+      BITOP OR or-result x y z
+      ## 按位 异 或
+      BITOP XOR xor-result x y z
+      ## 取反 not
+      BITOP NOT not-value value
+      ~~~
+
+      
