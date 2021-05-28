@@ -58,3 +58,4 @@
 
 3. 分区数量与linux系统的文件描述符有关,一般上线是硬限制描述符4096个,可以手动设置增大.
 
+### 注意:有时候kafka在server.properties的文件中配置连接的路径是localhost:2181而不是 localhost:2181/kafka 所以执行命令不能带/kafka.
