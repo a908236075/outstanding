@@ -65,6 +65,8 @@
      ./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic flow_log --from-beginning
      ## 指定消费组
 ./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic flow-event-log --consumer-property group.id=flowgroup2
+     ##或者
+     ./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic flwo-event-log --from-beginning --group flowgroup1
      ~~~
      
    - ~~~shell
@@ -72,6 +74,13 @@
    ./kafka-console-producer.sh --broker-list localhost:9092 --topic flow_log
      ~~~
    
-   - 
+5. 查看消费组消费情况
+
+   - ~~~shell
+     ## 查看所有消费组
+     ./kafka-consumer-groups.sh --bootstrap-server localhost:9092 --list
+     ## 查看指定消费组
+     ./kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group flowgroup2
+     ~~~
 
 ### 注意:有时候kafka在server.properties的文件中配置连接的路径是localhost:2181而不是 localhost:2181/kafka 所以执行命令不能带/kafka.
