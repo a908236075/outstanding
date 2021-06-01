@@ -66,7 +66,7 @@
      ## 指定消费组
 ./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic flow-event-log --consumer-property group.id=flowgroup2
      ##或者
-     ./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic flwo-event-log --from-beginning --group flowgroup1
+     ./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic flow-event-log --from-beginning --group flowgroup1
      ~~~
      
    - ~~~shell
