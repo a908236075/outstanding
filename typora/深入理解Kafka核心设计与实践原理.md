@@ -48,23 +48,29 @@
      # --unavailable-partitions 查看主题中没有leader副本的分区
      ./bin/kafka-topics.sh --zookeeper localhost:2181/kafka --describe --topic topic-demo --unavailable-partitions
      ~~~
+     
+2. 创建主题 test 3个副本 2个分区
 
-2. 修改分区
+      ~~~shell
+   ./kafka-topics.sh --zookeeper localhost:2181 --create --topic test --replication-factor 3 --partitions 2
+      ~~~
+
+3. 修改分区
 
    - ~~~shell
      #分区数修改为3
      ./bin/kafka-topics.sh --zookeeper localhost:2181/kafka --alter --topic demo --partitions 3  5
      ~~~
 
-3. 分区数量与linux系统的文件描述符有关,一般上线是硬限制描述符4096个,可以手动设置增大.
+4. 分区数量与linux系统的文件描述符有关,一般上线是硬限制描述符4096个,可以手动设置增大.
 
-4. 控制台模拟消费端
+5. 控制台模拟消费端
 
    - ~~~shell
      ## 从开始消费
      ./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic flow_log --from-beginning
      ## 指定消费组
-./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic flow-event-log --consumer-property group.id=flowgroup2
+   ./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic flow-event-log --consumer-property group.id=flowgroup2
      ##或者
      ./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic flow-event-log --from-beginning --group flowgroup1
      ~~~
@@ -73,14 +79,16 @@
      ## 模拟生产者
    ./kafka-console-producer.sh --broker-list localhost:9092 --topic flow_log
      ~~~
-   
-5. 查看消费组消费情况
+
+6. 查看消费组消费情况
 
    - ~~~shell
      ## 查看所有消费组
      ./kafka-consumer-groups.sh --bootstrap-server localhost:9092 --list
      ## 查看指定消费组
      ./kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group flowgroup2
+     ## 删除消费组
+     ./kafka-consumer-groups.sh --bootstrap-server localhost:9092 --delete --group flowgroup3              
      ~~~
 
 ### 注意:有时候kafka在server.properties的文件中配置连接的路径是localhost:2181而不是 localhost:2181/kafka 所以执行命令不能带/kafka.
