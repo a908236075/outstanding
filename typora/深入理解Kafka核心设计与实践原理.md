@@ -48,12 +48,12 @@
      # --unavailable-partitions 查看主题中没有leader副本的分区
      ./bin/kafka-topics.sh --zookeeper localhost:2181/kafka --describe --topic topic-demo --unavailable-partitions
      ~~~
-     
+   
 2. 创建主题 test 3个副本 2个分区
 
       ~~~shell
    ./kafka-topics.sh --zookeeper localhost:2181 --create --topic test --replication-factor 3 --partitions 2
-      ~~~
+   ~~~
 
 3. 修改分区
 
@@ -92,3 +92,5 @@
      ~~~
 
 ### 注意:有时候kafka在server.properties的文件中配置连接的路径是localhost:2181而不是 localhost:2181/kafka 所以执行命令不能带/kafka.
+
+### 注意2:消息的位移是递增的,而且保存消息的日志是有效期默认为7天,过了时间后,即使看到了位移,也不能消费到之前的数据了.
