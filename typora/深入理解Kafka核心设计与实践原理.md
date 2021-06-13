@@ -94,3 +94,53 @@
 ### 注意:有时候kafka在server.properties的文件中配置连接的路径是localhost:2181而不是 localhost:2181/kafka 所以执行命令不能带/kafka.
 
 ### 注意2:消息的位移是递增的,而且保存消息的日志是有效期默认为7天,过了时间后,即使看到了位移,也不能消费到之前的数据了.
+
+------
+
+## 第一章 初始kafka
+
+1. 主题与分区:Kafka中消息以主题为单位进行归类,生产者和消费者要与主题进行交互.一个主题可以细分为多个分区,分区在存储层面可以看做一个可追加的日志.消息被追加到分区日志文件时,都会分配一个特定的偏移量.Kafka保证的是分区有序而不是主题有序.
+2. 分区中有主副本(leader)和从副本(follow)组成(一主多从).
+   - 消息会先发送到主副本,然后从副本拉取主副本上的消息进行同步.leader副本只负责读写的请求,从副本只负责同步主副本的消息,等到主副本挂掉的时候,重新选举一个主副本.
+   - 从副本会同步消息会有一定的滞后,当**所有的从副本**都同步了某条消息后,这条消息才会被消费者消费到.每个副本都维护一个offset,所有的副本都具有这个offset,将这个offset成为**高水位**.
+3. Kafka复制机制:即不是完全的同步复制,也不是单纯的异步复制.完全同步复制,所有能工作的follow副本都同步完,才能被消费,影响了性能.完全的异步复制,如果主节点挂掉会出现消息的丢失.
+
+## 第二章 生产者
+
+1. 发送消息有三种模式:发后即忘,同步,异步.
+
+2. Kafka消息发送send本来就是异步的,可以在返回值调用get来阻塞,等待返回值,变成同步的请求.
+
+   1. ~~~java
+      Future<RecordMetadata> future = producer.send(record);
+      // 阻塞 变成同步的请求.
+      RecordMetadata metadata = future.get();
+      System.out.println(metadata.topic() + "-" +
+      metadata.partition() + ":" + metadata.offset());
+      ~~~
+
+   2. 异步发送 调用一个回调函数 ,可以**保证分区有序性.**
+
+      ~~~java
+      // CallBack 回调函数
+      producer.send(record, new Callback() (
+      @Override
+      public void onCompletion(RecordMetadata metadata, Exception exception) (
+      if (exception ! = null) (
+      exception.printStackTrace();
+      } else (
+      System.out.println(metadata.topic() + "-" +
+      metadata.part1tion() + " : " + metadata.offset());}}
+      }) ;
+      ~~~
+
+   3. produce.close();会等待所有的请求执行发送完之后,在调用关闭方法.也可以在close设置等待的时间,进行强行的关闭.
+
+   4. 可以自定义序列化格式,需要实现Serializer接口.
+
+      1. ~~~java
+         public class CompanySerializer implements Serializer<Company> 
+         ~~~
+
+   5. 如果发送消息的时候指定了分区,需要用到分区器.
+
