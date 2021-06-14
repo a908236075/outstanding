@@ -70,14 +70,14 @@
      ## 从开始消费
      ./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic flow_log --from-beginning
      ## 指定消费组
-   ./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic flow-event-log --consumer-property group.id=flowgroup2
+     ./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic flow-event-log --consumer-property group.id=flowgroup2
      ##或者
      ./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic flow-event-log --from-beginning --group flowgroup1
      ~~~
      
    - ~~~shell
      ## 模拟生产者
-   ./kafka-console-producer.sh --broker-list localhost:9092 --topic flow_log
+     ./kafka-console-producer.sh --broker-list localhost:9092 --topic flow_log
      ~~~
 
 6. 查看消费组消费情况
@@ -143,4 +143,17 @@
          ~~~
 
    5. 如果发送消息的时候指定了分区,需要用到分区器.
+   
+   6. 生产者客户端的整体架构
+   
+      1. ![](D:\develop\gitHub\outstanding\typora\picture\kafka\生产者客户端的整体架构.png)
+      2. 由主线程和Sender线程组成,主线程会将消息保存到**消息累加器中**,累加器的大小可以通过buffer.memory来配置,不同的分区中底层的数据结构是多个双端队列.通过设置batch.size参数设定producerBatch的大小.
+      3. Sender从RecordAccumulator获取缓存消息后,会进一步将<分区,Deque<ProducerBatch>>的保存形式转换为<Node,List<ProduderBatch>>的形式.
+      4. inFlightRequest通过未回应的请求判断Node节点中负载最小的那一个.
+      5. 记录集群的节点,分区信息的都称为元数据.
 
+## 第三章 消费者
+
+1. 消息投递的模式:**点对点模式和发布订阅模式**.当所有的消费者都隶属于同一个消费组,消息均衡的投递给每一个消费者,这时使用点对点模式.
+2. subscribe()和assign()都能订阅消息,但subscribe具有消费者自动再均衡的功能.
+3. 消费模式有推模式和拉模式两种.
