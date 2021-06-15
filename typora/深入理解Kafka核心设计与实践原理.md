@@ -15,15 +15,24 @@
    sudo docker run --name zookeeper2 -p 2181:2181  --restart always -d zookeeper:3.4.12
    ~~~
 
-4. 消费者参数:
+4. 使用docker安装kafka
+
+   ~~~shell
+   ## 进入容器中
+   docker exec -it kafka /bin/sh
+   ## kafka对应的位置
+   cd /opt/kafka_2.11-2.0.0/bin
+   ~~~
+
+5. 消费者参数:
 
    - AR集合:分区中所有副本的统称为AR.   AR=ISR+OSR.
    - ISR集合:所有与leader保持一定同步的副本组成.
    - OSR集合:与leader副本同步滞后过多的副本组成OSR(out-of-Replica)
 
-5. Key会被kafka server用来做为将数据分区的参数.
+6. Key会被kafka server用来做为将数据分区的参数.
 
-6. 消费完数据也需要提交commit,来更新队列里面处理消息的位置(下一次拉取的消息的位置).一般都是手动提交.
+7. 消费完数据也需要提交commit,来更新队列里面处理消息的位置(下一次拉取的消息的位置).一般都是手动提交.
 
 ### 主题与分区
 
@@ -46,7 +55,7 @@
 
    - ~~~shell
      # --unavailable-partitions 查看主题中没有leader副本的分区
-     ./bin/kafka-topics.sh --zookeeper localhost:2181/kafka --describe --topic topic-demo --unavailable-partitions
+     ./kafka-topics.sh --zookeeper localhost:2181 --describe --topic topic-demo --unavailable-partitions
      ~~~
    
 2. 创建主题 test 3个副本 2个分区
@@ -59,7 +68,7 @@
 
    - ~~~shell
      #分区数修改为3
-     ./bin/kafka-topics.sh --zookeeper localhost:2181/kafka --alter --topic demo --partitions 3  5
+     ./kafka-topics.sh --zookeeper localhost:2181/kafka --alter --topic demo --partitions 3  5
      ~~~
 
 4. 分区数量与linux系统的文件描述符有关,一般上线是硬限制描述符4096个,可以手动设置增大.
@@ -146,7 +155,7 @@
    
    6. 生产者客户端的整体架构
    
-      1. ![](D:\develop\gitHub\outstanding\typora\picture\kafka\生产者客户端的整体架构.png)
+      1. ![](..\typora\picture\kafka\生产者客户端的整体架构.png)
       2. 由主线程和Sender线程组成,主线程会将消息保存到**消息累加器中**,累加器的大小可以通过buffer.memory来配置,不同的分区中底层的数据结构是多个双端队列.通过设置batch.size参数设定producerBatch的大小.
       3. Sender从RecordAccumulator获取缓存消息后,会进一步将<分区,Deque<ProducerBatch>>的保存形式转换为<Node,List<ProduderBatch>>的形式.
       4. inFlightRequest通过未回应的请求判断Node节点中负载最小的那一个.
@@ -155,5 +164,24 @@
 ## 第三章 消费者
 
 1. 消息投递的模式:**点对点模式和发布订阅模式**.当所有的消费者都隶属于同一个消费组,消息均衡的投递给每一个消费者,这时使用点对点模式.
+
 2. subscribe()和assign()都能订阅消息,但subscribe具有消费者自动再均衡的功能.
+
 3. 消费模式有推模式和拉模式两种.
+
+4. ConsumerRecords(TopicPartition)方法来获取消息集中指定分区的消息.
+
+   1. ```java
+      ConsumerRecords<String, String> records=consumer.poll(Duration.ofMillis(lOOO));
+      for (TopicPartition tp : records.partitions()) {
+      for (ConsumerRecord<String, String> record : records.records(tp)) {
+      System.out.println(record.partition()+" : "+record.value());}}
+      ```
+
+5. 按照主题进行消费的方法.
+
+   1. ~~~java
+      public Iterable<ConsumerRecord<K, V>> records(String topic)
+      ~~~
+
+6. 
