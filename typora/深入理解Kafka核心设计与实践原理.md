@@ -209,3 +209,139 @@
 
 10. 消费者拦截器:在poll消息抵达之前进行一些操作.
 
+11. 多线程实现：
+
+    1. 常用的方法是**线程封闭**,每个线程实例化一个KafkaConsumer对象。一个线程可以消费一个或者多个分区中的消息，所有的消费线程隶属于同一个消费组。这种实现方式的并发度受限于分区的实际个数。
+    2. 多个消费线程消费同一个分区。由于对位移提交和顺序控制处理变得非常复杂，实际应用中使用的极少。不推荐。
+
+12. 多线程代码的实现
+
+    1. ~~~java
+       public class Consumer {
+           public static final String brokerList = "10.7.215.130:9092";
+       
+           public static final String groupid = "group1";
+           public String topic = "topic-demo";
+       
+           public static Properties initConfig() {
+               Properties props = new Properties();
+               props.put("bootstrap.servers", brokerList);
+               props.put("group.id", groupid);
+               props.put("enable.auto.commit", "true");
+               props.put("auto.commit.interval.ms", "1000");
+               props.put("session.timeout.ms", "30000");
+               props.put("max.poll.records", 1000);
+               props.put("auto.offset.reset", "earliest");
+               props.put("key.deserializer", StringDeserializer.class.getName());
+               props.put("value.deserializer", StringDeserializer.class.getName());
+               return props;
+           }
+       
+           public Consumer() {
+               Properties props = initConfig();
+               int consumerThreadNum = 3;
+               for (int i = 0; i < consumerThreadNum; i++) {
+                   new KafkaConsumerThread(props).start();
+               }
+           }
+       
+           public static void main(String[] args) {
+               new Consumer();
+           }
+       }
+       ~~~
+
+    2. ~~~java
+       public class KafkaConsumerThread extends Thread {
+       
+           private AtomicBoolean runBoolean=new AtomicBoolean(true);
+       
+           private KafkaConsumer<String, String> kafkaConsumer;
+       
+           public String topic = "topic-demo";
+       
+           public KafkaConsumerThread(Properties props) {
+               kafkaConsumer = new KafkaConsumer<>(props);
+               kafkaConsumer.subscribe(Arrays.asList(topic));
+           }
+       
+           @Override
+           public void run() {
+               try {
+                   while (runBoolean.get()) {
+                       ConsumerRecords<String, String> records =
+                               kafkaConsumer.poll(Duration.ofMillis(1000));
+                       for (ConsumerRecord<String, String> record : records) {
+                           // 处理消息模块
+                           System.out.println("record key is=" + record.key() + "==================value is " + record.value());
+                       }
+       //                runBoolean.set(false);
+                   }
+               } catch (Exception e) {
+                   e.printStackTrace();
+               } finally {
+                   kafkaConsumer.close();
+               }
+           }
+       }
+       ~~~
+
+    3. ~~~java
+       // 版本 二
+       // 消费消息耗时的步骤在一般在消息的处理上,所以尽量使用多线程
+       public class KafkaConsumerThread extends Thread {
+       
+           private AtomicBoolean runBoolean=new AtomicBoolean(true);
+       
+           private KafkaConsumer<String, String> kafkaConsumer;
+       
+           public String topic = "topic-demo";
+       
+           public KafkaConsumerThread(Properties props) {
+               kafkaConsumer = new KafkaConsumer<>(props);
+               kafkaConsumer.subscribe(Arrays.asList(topic));
+           }
+       
+           @Override
+           public void run() {
+               try {
+                   while (runBoolean.get()) {
+                       ConsumerRecords<String, String> records =
+                               kafkaConsumer.poll(Duration.ofMillis(1000));
+                       // 处理消息模块
+                       ExecutorService executorService  =  new ThreadPoolExecutor(3, 3,
+                               0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(1000),
+                               new ThreadPoolExecutor.CallerRunsPolicy());
+                       executorService.submit(new RecordHandler(records));
+                   }
+               } catch (Exception e) {
+                   e.printStackTrace();
+               } finally {
+                   kafkaConsumer.close();
+               }
+           }
+       }
+       
+       
+       // 另一个新的类 避免看上去很乱 写在一起
+       public class RecordHandler extends Thread {
+       
+           private ConsumerRecords<String, String> records;
+       
+           public RecordHandler(ConsumerRecords<String, String> records) {
+               this.records = records;
+           }
+       
+           @Override
+           public void run() {
+               for (ConsumerRecord<String, String> record : this.records) {
+                   System.out.println("record key is=" + record.key() + "==================value is " + record.value());
+               }
+           }
+       }
+       ~~~
+
+    4. 滑动窗口的方案以后再研究一下.
+
+13. 
+
