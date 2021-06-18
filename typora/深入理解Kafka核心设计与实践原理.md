@@ -184,4 +184,28 @@
       public Iterable<ConsumerRecord<K, V>> records(String topic)
       ~~~
 
-6. 
+6. 位移的提交动作在还未成功消费之前提交了,会出现**消息丢失.**当消费到X+5出现故障恢复后,重新拉取消息,x+2到x+4之间的消息又消费了一遍.出现了**重复消费**的问题.
+
+7. 在Kafka中消费者找不到所记录的消费位移时,就会根据消费者客户端参数**auto.offset.reset**配置决定从何处开始消费.latest表示从分区末尾开始消费.earliest表示从0开始消费.none找不到就抛出异常.
+
+8. seek()有指定分区位置消费的方法,还可以指定时间,消费到昨天或者之前的数据.
+
+9. 在均衡是指分区的所属权从一个消费者转移到另一个消费者的行为.
+
+   1. ~~~java
+      consumer.subscribe(Arrays.asList(topic), new ConsumerRebalanceListener () {
+      @Override
+      public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+      consumer.commitSync(currentOffsets);
+      currentOffsets.clear();
+      @Override
+      public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+      //do nothing.
+      }
+      }) ;
+      ~~~
+
+   2. 调用ConsumerRebalanceListener,重写方法,在均衡器触发之前和之后进行相应的操作.
+
+10. 消费者拦截器:在poll消息抵达之前进行一些操作.
+
