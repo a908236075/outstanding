@@ -346,5 +346,73 @@
 ## 第四章 主题与分区
 
 1. 分区可以有一至多个副本,每个副本对应一个日志文件,每一日志文件对应一至多个日志分段,每个日志分段还可以细分为索引文件,日志存储文件,快照文件等.
-2. 
 
+2. 当我们创建多个分区数为4,负载因子为2,一共8个日志文件,当有3个broker(服务器3个),kafka会均分为2,3,3.如果有9个,会均分为3,3,3.除了用kafka-topic.sh脚本自动分配,还可以通过**replica-assignment**手动分配方案.
+
+   1. 
+
+      ~~~shell
+       bin/kafka  topics.sh  --zookeeper  localhost:2181/
+      kafka  -- create -- topic topic-create-same --replica-assignment 2:0,0:1,1:2,2:1
+      ~~~
+
+   2. 2:0 分级代表分区号为2,0负载因子号为0.
+
+   3. 如果指定了重复的副本,会报AdminCommandFailedExecption.
+
+3. kafka在内部做埋点时会根据主题的名称来命名metric的名称,会将"."改写成"_",所以有时候会出现创建主题名称错误的异常.
+
+4. broker.rack=RACK1,指定了机架上的名称,如果集群中仅有部分指定了机架名称,回报AdminOperationException异常.
+
+5. 分区的计算规则 -----之后在研究
+
+6. under-replicated-partitions和unavailable-partpartitions都可以找到有问题的分区.unavailable-partpartitions参数可以找出所有包含失效副本的分区.
+
+   1. ~~~shell
+      bin/kafka-topics.sh --zookeeper localhost:2181/kafka --describe --topic topic-create --under-replicated-partitions
+      ~~~
+
+7. kafka支持增加分区数,而不支持减少分区数.
+
+8. ~~~shell
+   # 查看所有主题的配置参数
+   ./kafka-configs.sh --zookeeper localhost:2181 --describe --entity-type topics
+   ~~~
+
+9. kafkaAdminClient通过它可以在代码中操作主题等.
+
+10. 优先副本选举:可以通过path-to-json-file定义个json文件,当选举发生的时候,将优先的副本选举为主节点.
+
+11. 分区重分配,写好json配置文件,生成重分配方案,进行保存执行.
+
+    1. ~~~shell
+       ## 根据reassign.json生成重分配的方案.
+       ./kafka-reassign-partitions.sh  --zookeeper localhost:2181 --generate --topics-to-move-json-file reassign.json --broker-list 0,2
+       ~~~
+
+12. 使用kafka内置的sh来测试发送到主题的性能
+
+    1. ~~~shell
+       ## 生产能力测试
+       /kafka-producer-perf-test.sh --topic testtopic --num-records 100 --record-size 100 --throughput -1 --print-metrics --producer-props bootstrap.servers=192.168.199.128:9092 acks=1
+       ~~~
+
+    2. 参数的解释
+
+       1. ~~~shell
+          100 records sent, 336.700337 records/sec (0.03 MB/sec), 51.83 ms avg latency, 291.00 ms max latency, 50 ms 50th, 51 ms 95th, 291 ms 99th, 291 ms 99.9th.
+          ~~~
+
+       2. records sent表示测试时发送的消息总数； records/sec表示以每秒发送的消息数来统计吞吐量，括号中的MB/sec表示以每秒发送的消息大小来统计吞吐量，注意这两者的维度； avg latency 表示消息处理的平均耗时； max latency表示消息处理的最大耗时； 50th 、 95th 、 99th和99.9th 分别表示50%、 95%、 99%和99.9%的消息处理耗时。
+
+       3. ~~~shell
+          ##消费能力测试
+          ./kafka-consumer-perf-test.sh --topic testtopic --messages 100 --broker-list 192.168.199.128:9092
+          
+          ~~~
+
+13. 并不是分区数越多,吞吐量就越好.一般可以设置为集群个数的倍数.
+
+## 第五章 日志存储
+
+1. 
