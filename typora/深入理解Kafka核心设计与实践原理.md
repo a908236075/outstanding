@@ -454,4 +454,24 @@
 7. 幂等:通过properties.put("enable.idempotence",true)开启,但是需要确保客户端的retries,acks,max.in.flight.requests.per.connection这几个参数不被配置错.使用默认值就好,不需要刻意配置.
 8. broker服务端维护为每一个生产者(<pid,分区>)维护一个版本号,通过比较版本号实现幂等的功能.pid为每一个新的生产者生成的.
 9. 事务:
+   1. 通过properties.put("transactional.id",transaction),应用程序必须提供唯一的transactionalId,并且开启幂等.
+   2. 根据transactionalId,Kafka服务端也会生成一个PID,与之对应.对生产者而言,事务保证的语义比较强,对于消费者较弱.
+10. 事务执行的步骤:
+    1. **查找TransactionCoorinator**:TransactionCoorinator负责分配PID和管理事务.通过FindCoordinatorRequest请求实现,收到请求后会根据transactionalId查找对应的TransactionCoordinator节点.
+    2. **获取PID:**幂等功能开启就会生成PID,而并非事务.通过InitProducerRequest请求发送给TransactionCoordinator,将PID保存在_transaction_state中.增加PID对应的producer_epoch(版本号).
+    3. **开启事务**:kafkaProducer调用beginTransaction()方法可以开启一个事物.
+    4. **Consume-Transform-Produce:**囊括了整个事务的数据处理过程.
+       1. AddPartitionToTxRequest:生产者给一个新的分区发送数据之前,需要将此请求发送给TransactionCoordinator.主要的数据为<transactionId,TopicPartition>对应关系存储在_transaction_sate中.
+       2. ProduceRequest:
+       3. AddOffsetsToTXnRequest:KafkaProducer的SendOffsetsToTransaction()方法可以在一个事物批次里处理消息的消费和发送.这个方法发送AddOffsetsToTXnRequest:KafkaProducer,事务协调者(TransactionCoordinator)收到请求后,通过groupId来推导出在_consumer_offsets中的分区,之后会将这个分区保存在_transaction_state中.
+       4. TxOffsetCommitRequest:这个也是SendOffsetsToTransaction方法执行的一部分.将本次消费位移传递给GroupCoordinator.
+    5. **提交或者中止事务.**
+       1. EndTxRequest
+       2. WriteTxnMarkersRequest
+       3. 写入最终的COMPLETE_COMMIT或者COMPLETE_ABORT.
+
+## 第八章:可靠性探究
+
+1. replica.lag.time.max.ms:默认值为10000,副本同步的最大时间,如果follower副本之后leader副本的时间超过此参数则判定为同步失败.
+2. replica.lag.max.messages:默认值为4000:最大不同步的消息数.超过此值判定为副本同步失效.
 
