@@ -97,7 +97,11 @@
      ## 查看指定消费组
      ./kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group flowgroup2
      ## 删除消费组
-     ./kafka-consumer-groups.sh --bootstrap-server localhost:9092 --delete --group flowgroup3              
+     ./kafka-consumer-groups.sh --bootstrap-server localhost:9092 --delete --group flowgroup3  
+     ## 查看消费组状态
+      ./kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group flowgroup4 --state
+      ## 查看消费组内消费者的信息以及分配情况
+     ./kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group flowgroup4 --members --verbose
      ~~~
 
 ### 注意:有时候kafka在server.properties的文件中配置连接的路径是localhost:2181而不是 localhost:2181/kafka 所以执行命令不能带/kafka.
@@ -476,8 +480,34 @@
 2. 副本会发生伸缩:本质是通过Zookeeper的监控副本的变化情况,同步到主节点进行变更.
 3. 副本有本地副本和远程副本两种,本地副本存在本地的broker中,只有本地副本才有对应的日志(主节点).
 4. Leader副本记录了所有follower的LEO,在接收到follow拉取日志的请求后,leader副本在发送消息之前会将follower副本的LEO更新.
-5. **基于HW同步的消息丢失**:B为主副本,A为从副本,A,B都有m1,m2两条消息,HW都为1,当A从发送请求消息,并携带了自己的HW信息,B主根据请求更新了HW,在HW更新之前,B挂掉了,A成为主,B从进行同步,消息m2丢失.
+5. **基于HW同步的消息丢失**:B为主副本,A为从副本,A,B都有m1,m2两条消息,HW都为1,当A从发送请求消息,并携带了自己的HW信息,B主根据请求更新了HW,在HW更新为2之前,B挂掉了,A成为主,B从进行同步,消息m2丢失.
 6. **基于HW同步的消息不一致**:A主有m1,m2两条消息,且HW和LEO都为2,B从m1,且HW和LEO都为1.假设A,B同时挂掉,B先恢复成为主,B写入m3,并将LEO和HW更新为2,此时,A恢复,变为从,若根据HW同步,则A不用变更,但实质上是A中的m2,B主没有,B主的m3,A从也没有,出现了数据不一致的情况.
 7. 基于HW副本同步,会出现消息丢失和消息不一致的场景.所以引入了Epoch.每当Leader变更一次,就会增加1,同时记录第一次写入消息的**偏移量,**增设一个矢量<LeaderEpoch=>StartOffset>相当于为Leader增设了一个版本号.以后根据偏移量进行同步消息.
    1. 基于epoch防止消息丢失:A发生重启后,A不先忙着截断日志而是先发送OffsetsForLeaderEpochRequest请求给B,B leader返回的当前的LEO,如果A和B中的LeaderEpoch不同,那么B会查找LeaderEpoch为LE_A+1对应的StartOffset并返回给A,也就是LE_A对应的LEO.即A收到2之后,发现与目前的LEO相同,也就不需要截断日志了,如果A成为Leader,则LE=0,变成LE=1,对应的消息m2此时得到了保留.
+   2. 基于epoch防止数据不一致:A,B同时挂掉,B先恢复,此时LE0变成了LE1,A也恢复了,A为LE0,B根据LE0请求返回offset为1,m2删除,保持了数据的一致性.
+8. ack参数
+   1. ACK = 0 时 发送一次 不论leader是否接收
+   2. ACK = 1 时，等待leader接收成功即可
+   3. ACK = -1 时 ，需等待leader将消息同步给follower
+
+## 第九章 kafka应用
+
+1. 消费组一共有Dead,Empty,PreparingRebalance,completingRebalance,Stable这几种状态.组内没有消费者为空.
+
+   1. ~~~shell
+       ## 查看消费组状态.
+       ./kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group flowgroup4 --state
+      ~~~
+
+   2. ~~~shell
+      ## 查看消费组内消费者的信息以及分配情况
+      ./kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group flowgroup4 --members --verbose
+      ~~~
+
+   3. ~~~shell
+      ## 将消费唯一往前调整10,但是不执行. 只有--execute才是真正的执行
+      ./kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group flowgroup4 --topic taw --reset-offsets --shift-by -10 --dry-run
+      ~~~
+
+   4. 除了--shift-by 还有--to-current 位移重置为当前 --from-file offsets.csv --execute 按照配置文件执行.
 
