@@ -509,5 +509,10 @@
       ./kafka-consumer-groups.sh --bootstrap-server localhost:9092 --group flowgroup4 --topic taw --reset-offsets --shift-by -10 --dry-run
       ~~~
 
-   4. 除了--shift-by 还有--to-current 位移重置为当前 --from-file offsets.csv --execute 按照配置文件执行.
+   4. 除了--shift-by 还有--to-current 位移重置为当前 但是不执行,--from-file offsets.csv --execute 按照配置文件  执行.
+   
+
+## 第十章  kafka监控
+
+1. 
 
