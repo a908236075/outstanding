@@ -510,9 +510,16 @@
       ~~~
 
    4. 除了--shift-by 还有--to-current 位移重置为当前 但是不执行,--from-file offsets.csv --execute 按照配置文件  执行.
-   
 
 ## 第十章  kafka监控
 
-1. 
+1. 使用jconsole监控kafka
+
+   1. 修改bin/kafka-run-class.sh 在JMX settings后添加 -Djava.rmi.server.hostname=192.168.43.15
+
+   2. 启动 kafka
+
+      1. ~~~shell
+         JMX_PORT=9988 bin/kafka-server-start.sh -daemon config/server.properties
+         ~~~
 
