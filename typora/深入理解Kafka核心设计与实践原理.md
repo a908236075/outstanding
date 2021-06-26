@@ -112,10 +112,10 @@
 
 ## 第一章 初始kafka
 
-1. 主题与分区:Kafka中消息以主题为单位进行归类,生产者和消费者要与主题进行交互.一个主题可以细分为多个分区,分区在存储层面可以看做一个可追加的日志.消息被追加到分区日志文件时,都会分配一个特定的偏移量.Kafka保证的是分区有序而不是主题有序.
+1. 主题与分区:Kafka中消息以主题为单位进行归类,生产者和消费者要与主题进行交互.一个主题可以细分为多个分区,分区在存储层面可以看做一个可追加的日志.消息被追加到分区日志文件时,都会分配一个特定的偏移量.**Kafka保证的是分区有序而不是主题有序.**
 2. 分区中有主副本(leader)和从副本(follow)组成(一主多从).
-   - 消息会先发送到主副本,然后从副本拉取主副本上的消息进行同步.leader副本只负责读写的请求,从副本只负责同步主副本的消息,等到主副本挂掉的时候,重新选举一个主副本.
-   - 从副本会同步消息会有一定的滞后,当**所有的从副本**都同步了某条消息后,这条消息才会被消费者消费到.每个副本都维护一个offset,所有的副本都具有这个offset,将这个offset成为**高水位**.
+   - 消息会先发送到主副本,然后从副本拉取主副本上的消息进行同步.leader副本负责**读写**的请求,从副本只负责同步主副本的消息,等到主副本挂掉的时候,重新选举一个主副本.
+   - 从副本会同步消息会有一定的滞后,当**所有的从副本**都同步了某条消息后,这条消息才会被消费者消费到.每个副本都维护一个offset,所有的副本都具有这个offset,将这个offset成为**高水位**(HW).
 3. Kafka复制机制:即不是完全的同步复制,也不是单纯的异步复制.完全同步复制,所有能工作的follow副本都同步完,才能被消费,影响了性能.完全的异步复制,如果主节点挂掉会出现消息的丢失.
 
 ## 第二章 生产者
@@ -161,19 +161,22 @@
    
       1. ![](..\typora\picture\kafka\生产者客户端的整体架构.png)
       2. 由主线程和Sender线程组成,主线程会将消息保存到**消息累加器中**,累加器的大小可以通过buffer.memory来配置,不同的分区中底层的数据结构是多个双端队列.通过设置batch.size参数设定producerBatch的大小.
-      3. Sender从RecordAccumulator获取缓存消息后,会进一步将<分区,Deque<ProducerBatch>>的保存形式转换为<Node,List<ProduderBatch>>的形式.
-      4. inFlightRequest通过未回应的请求判断Node节点中负载最小的那一个.
-      5. 记录集群的节点,分区信息的都称为元数据.
+      3. 消息的累加器用来缓存消息以便Sender线程可以批量发送,进而减少传输的资源消耗.
+      4. Sender从RecordAccumulator获取缓存消息后,会进一步将原本<分区,Deque<ProducerBatch>>的保存形式转换为<Node,List<ProduderBatch>>的形式.之后Sender还会进一步封装成<Node,Request>的形式.
+      5. inFlightRequest通过未回应的请求数判断Node节点中负载最小的那一个.未回应的请求越多,说明负载越大.
+      6. 记录集群的节点,分区信息的都称为元数据.
 
 ## 第三章 消费者
 
-1. 消息投递的模式:**点对点模式和发布订阅模式**.当所有的消费者都隶属于同一个消费组,消息均衡的投递给每一个消费者,这时使用点对点模式.
+1. 消费者负责订阅Kafka中的主题(Topic),每个消费者对应一个消费组,一个主题中的消息只能被组内的一个消费者消费.
 
-2. subscribe()和assign()都能订阅消息,但subscribe具有消费者自动再均衡的功能.
+2. 消息投递的模式:**点对点模式和发布订阅模式**.当所有的消费者都隶属于同一个消费组,消息均衡的投递给每一个消费者,这时使用点对点模式.点对点模式消息不会存储在消息队列里面,直接被一个消费者消费,而不能被其它的消费者重复的消费.
 
-3. 消费模式有推模式和拉模式两种.
+3. subscribe()和assign()都能订阅消息,但subscribe具有消费者自动再均衡的功能.在多个消费者的情况下可以根据分区分配策略来自动分配各个消费者与分区的关系.
 
-4. ConsumerRecords(TopicPartition)方法来获取消息集中指定分区的消息.
+4. 消费模式有推模式和拉模式两种.一般使用拉取的模式,牺牲了实时性,但是提升了性能.
+
+5. ConsumerRecords(TopicPartition)方法来获取消息集中指定分区的消息.
 
    1. ```java
       ConsumerRecords<String, String> records=consumer.poll(Duration.ofMillis(lOOO));
@@ -182,43 +185,45 @@
       System.out.println(record.partition()+" : "+record.value());}}
       ```
 
-5. 按照主题进行消费的方法.
+6. 按照主题进行消费的方法.
 
    1. ~~~java
       public Iterable<ConsumerRecord<K, V>> records(String topic)
       ~~~
 
-6. 位移的提交动作在还未成功消费之前提交了,会出现**消息丢失.**当消费到X+5出现故障恢复后,重新拉取消息,x+2到x+4之间的消息又消费了一遍.出现了**重复消费**的问题.
+7. 位移的提交动作在还未成功消费之前提交了,会出现**消息丢失.**当消费到X+5出现故障恢复后,重新拉取消息,x+2到x+4之间的消息又消费了一遍.出现了**重复消费**的问题.问题出现在位移提交是在消息处理成功之前还是之后,会产生不同的问题.
 
-7. 在Kafka中消费者找不到所记录的消费位移时,就会根据消费者客户端参数**auto.offset.reset**配置决定从何处开始消费.latest表示从分区末尾开始消费.earliest表示从0开始消费.none找不到就抛出异常.
+8. 消费位移的自动提交通过参数enable.auto.commit=true来配置,默认为5s,会将拉取到的每个分区中最大的**消息位移**进行提交.自动提有重复消费和消息丢失的风险.
 
-8. seek()有指定分区位置消费的方法,还可以指定时间,消费到昨天或者之前的数据.
+9. 在Kafka中消费者找不到所记录的消费位移时,就会根据消费者客户端参数**auto.offset.reset**配置决定从何处开始消费.latest表示从分区末尾开始消费.earliest表示从0开始消费.none找不到消费位移就抛出异常.
 
-9. 在均衡是指分区的所属权从一个消费者转移到另一个消费者的行为.
+10. seek()有指定分区位置消费的方法,还可以指定时间,消费到昨天或者之前的数据.执行之前需要执行poll()方法作为前置的条件.
 
-   1. ~~~java
-      consumer.subscribe(Arrays.asList(topic), new ConsumerRebalanceListener () {
-      @Override
-      public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
-      consumer.commitSync(currentOffsets);
-      currentOffsets.clear();
-      @Override
-      public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
-      //do nothing.
-      }
-      }) ;
-      ~~~
+11. 再均衡是指分区的所属权从一个消费者转移到另一个消费者的行为.消费组会添加或者删除一个成员,在均衡发生期间,消费组内的消费者是无法读取消息的.
 
-   2. 调用ConsumerRebalanceListener,重写方法,在均衡器触发之前和之后进行相应的操作.
+    1. ~~~java
+       consumer.subscribe(Arrays.asList(topic), new ConsumerRebalanceListener () {
+       @Override
+       public void onPartitionsRevoked(Collection<TopicPartition> partitions) {
+       consumer.commitSync(currentOffsets);
+       currentOffsets.clear();
+       @Override
+       public void onPartitionsAssigned(Collection<TopicPartition> partitions) {
+       //do nothing.
+       }
+       }) ;
+       ~~~
 
-10. 消费者拦截器:在poll消息抵达之前进行一些操作.
+    2. 调用ConsumerRebalanceListener,重写方法,在均衡器触发之前和之后进行相应的操作.
 
-11. 多线程实现：
+12. 消费者拦截器:在poll消息抵达之前(onConsume)或之后(onCommit)进行一些操作.
+
+13. 多线程实现：
 
     1. 常用的方法是**线程封闭**,每个线程实例化一个KafkaConsumer对象。一个线程可以消费一个或者多个分区中的消息，所有的消费线程隶属于同一个消费组。这种实现方式的并发度受限于分区的实际个数。
     2. 多个消费线程消费同一个分区。由于对位移提交和顺序控制处理变得非常复杂，实际应用中使用的极少。不推荐。
 
-12. 多线程代码的实现
+14. 多线程代码的实现
 
     1. ~~~java
        public class Consumer {
@@ -522,4 +527,25 @@
       1. ~~~shell
          JMX_PORT=9988 bin/kafka-server-start.sh -daemon config/server.properties
          ~~~
+      
+   
+2. 通过查询下线分区,判断出哪个分区对应的broker出现了问题.
+
+   1. ~~~shell
+      ./bin/kafka-topics.sh --describe --zookeeper localhost:2181/kafka -under-replicated
+      ~~~
+
+   2. 如果所有的分区中Replicas都有某一个分区,这个分区是重点关注的对象.
+
+## 第十一章 高级应用
+
+1. 消息中间件的选型
+   1. 选型要点概述:
+      1. 功能维度:
+         - 广播消费:点对对消费:队列中不存储消息,直接被消费者消费掉.不可以被其它消费者重复的消费.发布订阅模式,可以被多个消费者进行消费.
+      2. 性能维度:
+         1. 从功能维度上RabbitMQ又是要大于Kafka,但是Kafka的吞吐量要比RabbitMQ高出1到2个数量级.RabbitMQ的单机QPS在万级别之内,而Kafka的单机QPS维持在十万级别,甚至是百万级别.
+      3. 可靠性与可用性
+         1. RabbitMQ通过镜像环形队列实现多副本及**强一致性**语义.一般金融支付领域使用的多.
+      4. 运维管理
 
