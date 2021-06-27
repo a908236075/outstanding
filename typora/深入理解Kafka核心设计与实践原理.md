@@ -390,16 +390,20 @@
 
 9. kafkaAdminClient通过它可以在代码中操作主题等.
 
-10. 优先副本选举:可以通过path-to-json-file定义个json文件,当选举发生的时候,将优先的副本选举为主节点.
+10. kafka-perferred-replica-election.sh脚本提供了对分区leader副本进行重新平衡的功能.
 
-11. 分区重分配,写好json配置文件,生成重分配方案,进行保存执行.
+11. 优先副本选举:可以通过path-to-json-file定义个json文件,当选举发生的时候,将优先的副本选举为主节点.
+
+12. 分区重分配,写好json配置文件,生成重分配方案,进行保存执行.
 
     1. ~~~shell
        ## 根据reassign.json生成重分配的方案.
        ./kafka-reassign-partitions.sh  --zookeeper localhost:2181 --generate --topics-to-move-json-file reassign.json --broker-list 0,2
        ~~~
 
-12. 使用kafka内置的sh来测试发送到主题的性能
+13. topic-reassign:分区重分配.
+
+14. 使用kafka内置的sh来测试发送到主题的性能
 
     1. ~~~shell
        ## 生产能力测试
@@ -420,16 +424,25 @@
           
           ~~~
 
-13. 并不是分区数越多,吞吐量就越好.一般可以设置为集群个数的倍数.
+15. 并不是分区数越多,吞吐量就越好.一般可以设置为集群个数的倍数.
 
 ## 第五章 日志存储
 
 1. Kafka使用了日志分段,一个log且分为多个logsegment.Log在物理上只是一个文件夹的形式存储,而每个logsegment对应一个日志文件和两个索引文件,以及可能的其它文件.
 2. 日志关系
    - ![](.\picture\kafka\日志关系.png)
-3. 日志数据结构发生了很多的改变,有很多的参数,例如:消息的键,消息的值,消息的长度.等到分析的时候在具体的看.
-4. 为了快速的定位消息日志,使用了索引方式.kafka采用的稀疏索引的方式,没保存4k文件,才会创建一个索引,所以有些时候,不是所有的消息都会有索引.
-5. 日志删除有三种方式:基于时间,基于日志大小,基于偏移量保留策略.
+3. 向Log中追加消息时是顺序写入的,只有最后一个LogSegment才能执行写入的操作,称为activeSegment.
+4. 每一Logsegment都有一个基准的偏移量baseOffset,用来标识日志的第一条消息的offset,日志的文件和两个索引文件都是根据baseOffset命名的,长度为20位数字,没有达到用0进行补充.
+5. 消息格式
+   1. <img src="D:\develop\gitHub\outstanding\typora\picture\kafka\v0版本的消息格式.png"  />
+   2. ![](D:\develop\gitHub\outstanding\typora\picture\kafka\v1版本的消息结构.png)
+6. 日志数据结构发生了很多的改变,有很多的参数,例如:消息的键,消息的值,消息的长度.等到分析的时候在具体的看.
+7. 日志索引:偏移量索引文件和时间索引文件.
+8. 为了快速的定位消息日志,使用了索引方式.kafka采用的稀疏索引的方式,每保存4k文件,才会创建一个索引,所以有些时候,不是所有的消息都会有索引.
+9. 日志删除有三种方式:基于时间,基于日志大小,基于偏移量保留策略.
+10. 日志删除的时候,会对部分符合条件的日志进行切分,将一部分数据形成新的日志段进行保留.
+11. 日志压缩以后在学习.
+12. 零拷贝:将数据直接从磁盘文件复制到网卡的设备中.而不需要经由应用程序之手.
 
 ## 第六章 深入理解服务端
 
@@ -527,7 +540,6 @@
       1. ~~~shell
          JMX_PORT=9988 bin/kafka-server-start.sh -daemon config/server.properties
          ~~~
-      
    
 2. 通过查询下线分区,判断出哪个分区对应的broker出现了问题.
 
