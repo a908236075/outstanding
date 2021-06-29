@@ -463,7 +463,7 @@
    1. 第一阶段:FIND_COORDINATOR:消费者需要确认他所属的消费组对应的GroupCoordinator所在的broker,并创建于改Broker相互通信的网络连接.最终消费者保存了与消费组对应的GroupCoordinator节点信息.
    2. 第二阶段:JOIN_GROUP:消费者会向GroupCoordinator发送JoinGroupRequest请求,并处理响应.GroupCoordinator主要做两件事:
       1. 选举消费组的leader:如果没有第一个加入消费组的消费者即为消费组的leader,如果之前有,就从消费组随机选一个.
-      2. 选举分区分配策略:少数服从多数为原则.
+      2. 选举分区分配策略:少数服从多数为原则.并不是有Leader决定的.
    3. 第三阶段:SYNC_GROUP:通过GroupCoordinator中间人同步分区分配策略给所有的消费者.
    4. 第四阶段:HEARTBEAT:消费者通过向GroupCoordinator发送心跳来维持他们与消费组的从属关系,以及他们对分区所有权的关系.
 4. _consumer_offsets:集群中第一次有消费者消费消息时会自动创建主题__consumer_offsets.
@@ -475,8 +475,8 @@
    - 恰好一次:每条消息肯定会传输一次并仅传输一次.
 6. 对于消息的重复传输以及丢失,和消息位移提交以及消费的处理顺序有关,如果处理在位移提交之前,如果发生故障后恢复,就会发生**重复消费**的问题,如果处理在位移提交之后,就会发生**消息丢失**的可能.
 7. 幂等:通过properties.put("enable.idempotence",true)开启,但是需要确保客户端的retries,acks,max.in.flight.requests.per.connection这几个参数不被配置错.使用默认值就好,不需要刻意配置.
-8. broker服务端维护为每一个生产者(<pid,分区>)维护一个版本号,通过比较版本号实现幂等的功能.pid为每一个新的生产者生成的.
-9. 事务:
+8. broker服务端维护为每一个生产者(<pid,分区>)维护一个版本号,通过比较版本号实现幂等的功能.**pid**为每一个新的生产者生成的.**幂等只能保障一个分区消息不重复写入.**
+9. 事务:可以保证多个分区的**写入操作**的原子性.
    1. 通过properties.put("transactional.id",transaction),应用程序必须提供唯一的transactionalId,并且开启幂等.
    2. 根据transactionalId,Kafka服务端也会生成一个PID,与之对应.对生产者而言,事务保证的语义比较强,对于消费者较弱.
 10. 事务执行的步骤:
