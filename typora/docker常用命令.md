@@ -18,5 +18,18 @@
    docker rmi 镜像名称orID //删除镜像
    ~~~
 
-2. 
+2. docker 拷贝文件
+
+   1. ~~~shell
+      ##本地到docker
+      docker cp /Users/howey/Documents/apache-maven-3.5.2/ 749056ea1637:/opt
+      docker cp 本地路径 容器Id或name:容器目录
+       
+      ~~~
+
+   2. ~~~shell
+      ## docker 到本地
+      docker cp testtomcat：/usr/local/tomcat/webapps/test/js/test.js /opt
+      docker cp 容器Id:容器路径 宿主机路径
+      ~~~
 
