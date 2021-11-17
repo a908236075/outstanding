@@ -16,6 +16,7 @@
    docker start 容器ID //启动容器
    docker stop 容器ID //终止容器
    docker rmi 镜像名称orID //删除镜像
+   docker exec -it topisa /bin/bash
    ~~~
 
 2. docker 拷贝文件
