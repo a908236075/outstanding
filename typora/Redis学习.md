@@ -31,6 +31,8 @@ redis-cli --cluster fix 127.0.0.1:7000
       docker ps
       # 启动 redis
       docker start redis-test
+      # 执行命令
+      redis-cli
       ~~~
 
 2. Redis的所以的key都是String类型的.不同的是value值的类型不一样.

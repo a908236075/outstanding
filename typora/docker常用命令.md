@@ -17,6 +17,13 @@
    docker stop 容器ID //终止容器
    docker rmi 镜像名称orID //删除镜像
    docker exec -it topisa /bin/bash
+   ##查询端口号占用
+   ss -antulp | grep POR 看下监听端口或者ps看见jboss相关进程
+   ##添加端口对外映射
+   #查看端口映射列表
+   sudo iptables -t nat -vnL DOCKER --line-number
+   #端口映射 10902--->10902
+   sudo iptables -t nat -A  DOCKER -p tcp --dport 10902 -j DNAT --to-destination 172.17.0.2:10902
    ~~~
 
 2. docker 拷贝文件
