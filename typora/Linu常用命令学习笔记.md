@@ -236,7 +236,7 @@
                  	fi
        ~~~
        ~~~
-
+   
        ~~~
        
     5. ~~~shell
@@ -474,7 +474,7 @@
 
           2. Partition Table 分区表的格式 :msdos 微软磁盘操作系统,MBR:
 
-       5.  磁盘分区
+       5. 磁盘分区
 
           1. ~~~shell
              [root@bogon dev]# fdisk /dev/sda
@@ -546,8 +546,15 @@
                 ## 使用partprobe后进行刷新.
                 ~~~
 
-             3. 
-
+       6. 文件与文件系统的压缩
+       
+          1. **压缩**:tar -jcv -f filename.tar.bz2  **要被压缩的文件或目录名称**
+          2. **查询**:tar -jtv  -f filename.tar.bz2
+          3. **解压缩**:tar -jxv -f  finename.tar.bz2 -C **欲解压的目录**
+          4. 命令中的j标识支持bzip2 文件名最好命名为.bz2,如果换成z,则是支持zp格式. 例如tar zcv -f  /root/etc.tar.gz /etc.换成J则表示支持xz,文件名以xz结尾.
+          5.  将部分文件进行解压
+             1. tar -jtv -f /root/ext.tar.gz2 | grep 'shadow'  先查询想要解压的文件
+             2. tar -jxv -f /root/ext.tar.gz2  /etc/shadow  文件就会加压到当前文件夹的etc/shadow中了
 
 
 
