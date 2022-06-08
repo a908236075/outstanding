@@ -374,9 +374,9 @@
 5. 文件内容的查看
 
    1. cat:从第一行显示文件内容:concatenate(串联).
-   
+
    2. tac:cat的倒写,从最后一行查看.
-   
+
    3. less
       - 空格键 向下饭一页
       - /字符串 向下查找关键字
@@ -386,54 +386,167 @@
       - g 前进道文件的第一样
       - G 最后一行.
       - q 离开
-   
+
    4. head
       
    - -n 后面接数字 表示显示几行  head -n 20 test.txt
-      
+     
    5. tail
       - tail -f test.log 持续显示文件末尾的数据.  f:follow  
       - tail -fn 20 test.log   -n 后面接显示的行数.
       - head -n 20 | tail -n 10 test.log 显示文件第10行到20行的数据.
-   
+
    6. od 非纯文本文件查看
-   
+
    7. touch 可以修改文件的时间,文件有三种时间:mtime:修改时间,ctime:状态时间(修改权限,状态改变),atime:读取时间.
-   
+
    8. 默认权限
-   
+
       1. 创建文件或目录**默认的权限**查询:umask -S 
-   
+
          1. ~~~shell
             umask
             0002
             umask -S
             u=rwx,g=rwx,o=rx
             ~~~
-   
+
          2. 0002 第一个不用管 后三位是表示去掉的权限.
-   
+
          3. 文件与目录默认权限不同,文件默认就没有执行权限,在加上umask的去掉的权限.
-   
+
    9. 用户可以修改文件的基本权限是什么:**具有目录的执行权限,具有文件的r和w的权限.**
-   
+
    10. 磁盘:
-   
+
        1. superblock:记录此filesystem 的整个信息,包括inode/block的总量,使用量,剩余量,以及文件系统的格式和相关信息等.
        2. inode 记录了文件的属性(拥有者,权限,最近修改的时间等),一个文件占用一个inode,同时记录此文件的数据所在的block号码.
        3. block:实际记录文件的内容,若文件太大时,会占用多个block.
        4. 如果文件很小,则剩余的block的空间是不能被使用的.也不能将block定义的太小,会导致大文件占用太多的block,影响读写的性能.
-   
+
    11. 挂载点为目录,该目录为进入该文件系统的入口.
-   
+
    12. df:列出文件系统的整体磁盘使用量.
-   
+
        1. df -h 以易读的形式返回磁盘使用信息.
-   
+
    13. du:评估文件系统的磁盘使用量.
-   
+
        1. du 显示文件的容量  单位是KB.
-       2. 
+       
+   14. 创建目录快捷方式: ln -s  pwsswd-so 如果加-s就是symbol link.否则就是hard link.
+
+   15. 磁盘分区
+
+       1. lsblk :列出所有存储装置(list block device);
+
+       2. ~~~shell
+          [root@bogon /]# lsblk
+          NAME   MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+          sda      8:0    0   20G  0 disk 
+          ├─sda1   8:1    0  300M  0 part /boot
+          ├─sda2   8:2    0  512M  0 part [SWAP]
+          └─sda3   8:3    0 19.2G  0 part /
+          sr0     11:0    1  4.5G  0 rom  
+          #MAJ:MIN:核心认识的装置都是透过这两个代码来熟悉的!粉笔是主要的:次要的装置代码.
+          #RM:是否可以卸载的装置,
+          #RO:是否是只读装置.
+          #TYPE:是磁盘(disk),分区盘(partition)还是只读存储器(rom)等输出.
+          ~~~
+
+       3. blkid:列出装置的UUID等参数.
+
+       4. 透过blkid 也知道了所有的文件系统! 想要进一步知道磁盘的分区类型 parted这个命令
+
+          1. ~~~shell
+             [root@bogon dev]# parted /dev/sda print
+             Model: VMware, VMware Virtual S (scsi)
+             Disk /dev/sda: 21.5GB
+             Sector size (logical/physical): 512B/512B
+             Partition Table: msdos
+             Disk Flags: 
+             
+             Number  Start   End     Size    Type     File system     标志
+              1      1049kB  316MB   315MB   primary  xfs             启动
+              2      316MB   852MB   537MB   primary  linux-swap(v1)
+              3      852MB   21.5GB  20.6GB  primary  xfs
+             ~~~
+
+          2. Partition Table 分区表的格式 :msdos 微软磁盘操作系统,MBR:
+
+       5.  磁盘分区
+
+          1. ~~~shell
+             [root@bogon dev]# fdisk /dev/sda
+             欢迎使用 fdisk (util-linux 2.23.2)。
+             
+             更改将停留在内存中，直到您决定将更改写入磁盘。
+             使用写入命令前请三思。
+             
+             
+             命令(输入 m 获取帮助)：p
+             
+             磁盘 /dev/sda：21.5 GB, 21474836480 字节，41943040 个扇区
+             Units = 扇区 of 1 * 512 = 512 bytes
+             扇区大小(逻辑/物理)：512 字节 / 512 字节
+             I/O 大小(最小/最佳)：512 字节 / 512 字节
+             磁盘标签类型：dos
+             磁盘标识符：0x000ba003
+             
+                设备 Boot      Start         End      Blocks   Id  System
+             /dev/sda1   *        2048      616447      307200   83  Linux
+             /dev/sda2          616448     1665023      524288   82  Linux swap / Solaris
+             /dev/sda3         1665024    41943039    20139008   83  Linux
+             ~~~
+
+          2. 创建一个新的分区
+
+             1. ~~~shell
+                [root@localhost dev]# fdisk /dev/sda
+                欢迎使用 fdisk (util-linux 2.23.2)。
+                
+                更改将停留在内存中，直到您决定将更改写入磁盘。
+                使用写入命令前请三思。
+                
+                
+                命令(输入 m 获取帮助)：n
+                Partition type:
+                   p   primary (2 primary, 0 extended, 2 free)
+                   e   extended
+                Select (default p): p
+                分区号 (3,4，默认 3)：4
+                No free sectors available
+                
+                命令(输入 m 获取帮助)：n       
+                Partition type:
+                   p   primary (2 primary, 0 extended, 2 free)
+                   e   extended
+                Select (default p): p
+                分区号 (3,4，默认 3)：3
+                ## 选择可用的分区和容量后打印磁盘信息
+                命令(输入 m 获取帮助)：w
+                命令(输入 m 获取帮助)：p 
+                ~~~
+
+             2. ~~~shell
+                [root@localhost dev]# cat /proc/partitions 
+                major minor  #blocks  name
+                
+                   8        0  209715200 sda
+                   8        1     512000 sda1
+                   8        2  209202176 sda2
+                  11        0    4481024 sr0
+                 253        0  205004800 dm-0
+                 253        1    4194304 dm-1
+                 ## 看到并没有我们新创建的分区 因为这时候分区核心并没有更新.
+                 [root@bogon dev]# partprobe -s
+                /dev/sda: msdos partitions 1 2 3
+                Warning: 无法以读写方式打开 /dev/sr0 (只读文件系统)。/dev/sr0 已按照只读方式打开。
+                /dev/sr0: msdos partitions 2
+                ## 使用partprobe后进行刷新.
+                ~~~
+
+             3. 
 
 
 
