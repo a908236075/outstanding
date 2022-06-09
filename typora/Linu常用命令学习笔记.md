@@ -578,7 +578,11 @@
           13. :1,$s/word1/word2/gc 从第一列到最后一列寻找并替换.并一个一个单词的comfirem
           14. :sp 在打开的文档中输入:sp 打开多窗口. Ctrl+W+↑或者↓ 切换窗口.Ctrl+W+q 全部离开.
           15. set nu set nonu  设置行号 或者取消行号.
-          16.  
+          
+       9. 认识与学习bash
+       
+          1. type 命令 可以查看是否是内容的bash命令.例如 type cd
+          2. 
 
 
 
