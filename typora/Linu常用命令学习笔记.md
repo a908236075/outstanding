@@ -236,7 +236,7 @@
                  	fi
        ~~~
        ~~~
-   
+        
        ~~~
        
     5. ~~~shell
@@ -546,15 +546,39 @@
                 ## 使用partprobe后进行刷新.
                 ~~~
 
-       6. 文件与文件系统的压缩
+       6. 压缩技术:读取已byte为单位,为了方便读取需要填充0,压缩技术就是利用这些0.
+       
+       7. 文件与文件系统的压缩
        
           1. **压缩**:tar -jcv -f filename.tar.bz2  **要被压缩的文件或目录名称**
           2. **查询**:tar -jtv  -f filename.tar.bz2
           3. **解压缩**:tar -jxv -f  finename.tar.bz2 -C **欲解压的目录**
           4. 命令中的j标识支持bzip2 文件名最好命名为.bz2,如果换成z,则是支持zp格式. 例如tar zcv -f  /root/etc.tar.gz /etc.换成J则表示支持xz,文件名以xz结尾.
-          5.  将部分文件进行解压
+          5.  将**部分文件**进行**解压**
              1. tar -jtv -f /root/ext.tar.gz2 | grep 'shadow'  先查询想要解压的文件
              2. tar -jxv -f /root/ext.tar.gz2  /etc/shadow  文件就会加压到当前文件夹的etc/shadow中了
+          6. 将**部分文件**进行**压缩**
+             1.  tar -jvc -f /root/system.tar.bz2 --exclude=/root/etc*  /tmp/
+             2. 压缩/tmp中除了/root/etc*的文件 压缩到/root/system.tar.bz2.
+       
+       8. vim程序编辑器
+       
+          1.  ctrl +u 向上移动半页
+          2. ctrl + d 向下移动半页.
+          3. nyy 复制光标所在的向下n列的.
+          4. p 粘贴.
+          5. ndd 删除光标所在的向下n列.
+          6. G移动文档的最后一列.
+          7. gg 移动到文档的第一列.
+          8. n <Enter> 光标向下移动n列.
+          9. x,X x向后删除一个字符(相当于del) X 向前删除一个字符相当于backspace.
+          10. u 复原前一个动作
+          11. Ctrl + r 重复上一个动作. 
+          12. :n1,n2s/word1/word2/g 在n1与n2列之间寻找word1 并将word1替换为word2
+          13. :1,$s/word1/word2/gc 从第一列到最后一列寻找并替换.并一个一个单词的comfirem
+          14. :sp 在打开的文档中输入:sp 打开多窗口. Ctrl+W+↑或者↓ 切换窗口.Ctrl+W+q 全部离开.
+          15. set nu set nonu  设置行号 或者取消行号.
+          16.  
 
 
 
