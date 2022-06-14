@@ -547,9 +547,9 @@
                 ~~~
 
        6. 压缩技术:读取已byte为单位,为了方便读取需要填充0,压缩技术就是利用这些0.
-       
+
        7. 文件与文件系统的压缩
-       
+
           1. **压缩**:tar -jcv -f filename.tar.bz2  **要被压缩的文件或目录名称**
           2. **查询**:tar -jtv  -f filename.tar.bz2
           3. **解压缩**:tar -jxv -f  finename.tar.bz2 -C **欲解压的目录**
@@ -560,9 +560,9 @@
           6. 将**部分文件**进行**压缩**
              1.  tar -jvc -f /root/system.tar.bz2 --exclude=/root/etc*  /tmp/
              2. 压缩/tmp中除了/root/etc*的文件 压缩到/root/system.tar.bz2.
-       
+
        8. vim程序编辑器
-       
+
           1.  ctrl +u 向上移动半页
           2. ctrl + d 向下移动半页.
           3. nyy 复制光标所在的向下n列的.
@@ -580,135 +580,226 @@
           15. set nu set nonu  设置行号 或者取消行号.
           
        9. 认识与学习bash
-       
+
           1. type 命令 可以查看是否是内容的bash命令.例如 type cd
-          
+
           2. ctrl+u 删除光标前面的命令,ctrl+k 删除光标后面的命令.
-          
+
           3. **设置变量** 变量名=内容.变量名只能是英文字母或者数字,但是不能以数字开头.
-          
+
           4. unset 变量名 **取消变量**.
-          
+
           5. **双引号**引用的内容可以保有变量的内容(也就是会转换).**单引号**不会.
-          
+
           6. set 观察所有的变量.unset name 可以取消变量名为name的变量.
-          
+
           7. export 变量名 自定义变量转变成环境变量. 没有指定变量名就显示所有的**环境**变量.
-          
+
           8. ulimit -a 查看所有限制用户的系统资源参数.例如最多打开多少文件数量.
-          
+
           9. hsitory 10 显示最近10条的命令 !88 执行第88条命令 !! 执行上一条命令.
-          
+
           10. $? 获取前一个命令的输出结果.
-          
+
           11. 与环境变量相关的配置文件 略过
-          
+
           12. 输入符号 > 例如将 ll -d >1.txt 中 ,每次将旧的的数据覆盖掉,如果不想覆盖,使用衔接符号>>.
-          
+
           13. 如果想多条命令一起执行,需要将命令用;分开 例如 sync;sync
-          
+
           14. 命令有前因后果的关系:
               1. cmd1&&cmd2 当cmd1执行成功cmd2命令才会执行.
               2. cmd1||cmd2 当cmd1不执行成功了 cmd2才会执行. 
-          
+
           15. 管道命令
               1. 管道命令仅会处理标准输出,对于标准错误会予以忽略.
-          
+
               2. cut -d 后面接分个字符 -f 第几段      用分个字符将输入切分成几段 -f 后面接数组 取出第几段
-          
+
                  1. ```shell
                     echo $PATH | cut -d ':' -f 5 ##/usr/local/java/jdk1.8.0_291/bin
                     ```
-          
+
               3. grep 提取 -v 反向选取  
-          
+
                  1. ```shell
                     last | grep -v "root"  ## 命令中不包含root的字符.
                     ```
-          
+
               4. uniq 唯一显示
-          
+
                  1. ~~~shell
                      cat /etc/passwd | sort -n | uniq -c ##-c 进行计数
                     ~~~
-          
+
               5. wc [lwm] 查看文件的行数 字数和字符数.
-          
+
               6. tee 将处理的数据直接写入到文件或者屏幕上.
-          
+
                  1. ~~~shell
                     last | tee last.list | cut -d " " -f 1 ##只是将数据进行保存 不影响后续的操作.
                     ~~~
-          
+
                  2. 不同于>或者>> 是将所有的输入都写入某个文件,tee可以继续处理,而不是终结输入.
-          
+
               7. 有时候用到tee将内容写入新的文件中,需要对部分字段做处理,就要用到col(将tab转成空格键),join,paste,expand等关键字.
-          
+
               8. split 将文件进行分隔.
-          
+
                  1. ~~~shell
                     split -b 300k /etc/services services
                     ~~~
-          
+
           16. 正则表达式与文件格式化处理
-          
+
               1. ^ 在括号之内[ ]代表反向选择,在[ ]之外则代表定位在首行.
-          
+
                  1. ~~~shell
                     grep -n '[^[:lower:]]' man_db.conf ## 表示显示包含除了a~z的行.
                     ~~~
-          
+
               2. 在文件中,每一行的空格前都隐藏这$,正则表达^$ 代表以$开头的意思
-          
+
                  1. ~~~shell
-                    grep -v '^$' /etc/rsyslog.conf | grep -v '^#' ##  -v 是反选 ,表示去掉空格行和去掉注释行.
+                    grep -v '^$' /etc/rsyslog.conf | grep -v '^#' ##  -v 是反选 ,表示去掉空格行和去掉注释行.每一个空行其实开头都有一个隐藏的$
                     ~~~
-          
+
               3. *代表有任意个可以为0个,.代表一定有一个字符的意思.
-          
+
                  1. ~~~shell
                     grep -n 'oo*' /etc/rsyslog.conf ##至少含有一个o的行.
                     ~~~
-          
+
                  2. ~~~shell
-                    grep -n 'g.*g' /etc/rsyslog.conf ## .* 代表0个或者多个任意字符,过滤了含有g...g的行数.
+                    grep -n 'g.*g' /etc/rsyslog.conf ## .* 代表0个或者多个任意字符,过滤了含有g......g的行数.
                     ~~~
-          
+
               4. 限定连续RE字符范围{}
-          
+
                  1. ~~~shell
                     grep -n 'go\{2,5\}g' regular_express.txt 
                     ## {} 需要使用\转义 表示g后面接2-5个o的行.
                     ~~~
-          
+
               5. 正则表达式与一般在命令行输入的通配符并不相同
-          
+
                  1. ~~~shell
                     ls -l a* 与 ls | grep -n '^a.*' ## 此语句都表示显示以a开头的文件 
                     ~~~
-          
+
               6. sed具有比grep更强大的更改的功能,以后才了解.
-          
+
               7. 扩展正则表达式
-          
+
                  1. 重复一个或者一个以上的前一个RE字符. --> + 例如 grep -n 'go+d' 1.txt
                  2. 零个或者一个 ---> ?
                  3. 用或(or) 的方式找出数个字符串 --->  | 
                  4. 找出字符串群组  ----> ( )
-          
+
               8. awk 主要处理每一行的字段内的数据,而默认的字段的分隔符为"空格键或者Tab键".
-          
+
                  1. ~~~shell
                     last -n 5 | awk '{print $1 "\t" $3}'
                     ~~~
-          
+
                  2. awk可以使用<,>等,还可以做计算.
-          
+
               9. 文件对比工具.
-          
+
                  1. diff 比较文本内容的行.
                  2. cmp 主要用于比较二进制文件.
                  3. patch 可以将旧数据更新到新的版本中.
+              
+          17. shell script 学习
+
+              1. 执行shell 需要具有r和x的权限,如果是sh 1.shell 这种方式执行,就只需要有r的权限即可.
+
+              2. 练习
+
+                 1. ~~~shell
+                    #!/bin/bash
+                    ## 创建三个文件 与当前的日志联动
+                    read -p "Please input your filename: " fileuser
+                    filename=${fileuser}
+                    date1=$(date --date='2 days ago' +%Y%m%d)
+                    
+                    date2=$(date --date='1 days ago' +%Y%m%d)
+                    date3=$(date  +%Y%m%d)
+                    file1=${filename}${date1}
+                    file2=${filename}${date2}
+                    file3=${filename}${date3}
+                    touch "${file1}"
+                    touch "${file2}"
+                    touch "${file3}"
+                    ~~~
+
+                 2. ~~~shell
+                    #!/bin/bash
+                    ## 乘法计算
+                    read -p "Please input firstNum : " firstNum
+                    read -p "Please input secondNum : " secondNum
+                    total=$((${firstNum}*${secondNum}))
+                    echo -e "\n The result ${firstNum} * ${secondNum} is ===> ${total}"
+                    ~~~
+
+              3. 使用sources 执行命令,使子线程的变量在父线程中生效.
+
+              4. 使用test进行判断
+
+                 1. ~~~shell
+                    #!/bin/bash
+                    ## 判断文件权限
+                    read -p "Please input filename" filename
+                    test -z ${filename} && echo "filename is null"&& exit 0
+                    test ! -e ${filename} && echo "The filename "${filename}" not exist" && exit 0
+                    test -f ${filename} && filetype="regular file"
+                    test -d ${filename} && filetype="directory"
+                    test -r ${filename} && perm="readable"
+                    test -w ${filename} && perm="${perm}writable"
+                    test -x ${filename} && perm="${perm}executable"
+                    echo "The filename: ${filename} is a ${filetype}"
+                    echo "And the permission for you are : ${perm}"
+                    ~~~
+
+              5. 使用[ ] 判断  括号两边需要有空格  
+
+                 1. ~~~shell
+                    [ "lbt"==$name ]
+                    ~~~
+
+              6. sh后的参数的序号
+
+                 1. ~~~shell
+                    /path/to/scriptname  opt1    opt2  opt3   opt4
+                    		${0}         ${1}    ${2}   ${3}   ${4} 
+                    ~~~
+
+                 2. 可以在.shell文件通过$1 获取第一个参数.
+
+              7. 条件判断
+
+                 1. ~~~shell
+                    if [空格 条件1 空格]; then
+                    	当条件1成立执行的命令
+                    elif [空格 条件2 空格]; then
+                    	当条件2成立执行的命令
+                    else
+                    	最后执行的命令
+                    fi
+                    ~~~
+
+                 2. ~~~shell
+                    #!/bin/bash
+                    if [ "${1}" == "hello" ]; then
+                            echo "Hello,how are you"
+                    elif [ test -z "${1}" ]; then
+                            echo "please input param"
+                    else
+                            echo "please input hello"
+                    fi
+                    ~~~
+
+                 3. 
 
 
 
