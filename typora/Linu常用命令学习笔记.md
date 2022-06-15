@@ -603,7 +603,36 @@
 
           11. 与环境变量相关的配置文件 略过
 
-          12. 输入符号 > 例如将 ll -d >1.txt 中 ,每次将旧的的数据覆盖掉,如果不想覆盖,使用衔接符号>>.
+          12. 数据流重定向
+
+              1. **标准输入:代码为0,使用<或<<**
+
+              2. **标准输出:代码为1,使用>或>>**
+          
+              3. **标准错误输出:代码为2,使用2>或2>>;**
+
+              4. ~~~shell
+                 find /home/ -name .bashrc >list_right 2>list_error ## 将正确信息和错误信息分别输出
+                 ~~~
+          
+              5. 如果想让正确的信息和错误的信息都写入到**同一个文件中**,注意写法
+          
+                 1. ~~~shell
+                    find /home/ -name .bashrc >list_right 2>list_right ##错误!!!!
+                    ~~~
+          
+                 2. ~~~shell
+                    find /home/ -name .bashrc >list_right 2>&1 ## 正确
+                    find /home/ -name .bashrc &>list_right  ## 正确
+                    ~~~
+
+              6. /dev/null垃圾桶黑洞设备与特殊写法
+
+                 1. ~~~shell
+                    find /home/ -name .bashrc 2>/dev/null
+                    ~~~
+
+              7. 输入符号 > 例如将 ll -d >1.txt 中 ,每次将旧的的数据覆盖掉,如果不想覆盖,使用衔接符号>>.
 
           13. 如果想多条命令一起执行,需要将命令用;分开 例如 sync;sync
 
@@ -613,43 +642,43 @@
 
           15. 管道命令
               1. 管道命令仅会处理标准输出,对于标准错误会予以忽略.
-
+          
               2. cut -d 后面接分个字符 -f 第几段      用分个字符将输入切分成几段 -f 后面接数组 取出第几段
-
+          
                  1. ```shell
                     echo $PATH | cut -d ':' -f 5 ##/usr/local/java/jdk1.8.0_291/bin
                     ```
-
+          
               3. grep 提取 -v 反向选取  
-
+          
                  1. ```shell
                     last | grep -v "root"  ## 命令中不包含root的字符.
                     ```
-
+          
               4. uniq 唯一显示
-
+          
                  1. ~~~shell
                      cat /etc/passwd | sort -n | uniq -c ##-c 进行计数
                     ~~~
-
+          
               5. wc [lwm] 查看文件的行数 字数和字符数.
-
+          
               6. tee 将处理的数据直接写入到文件或者屏幕上.
-
+          
                  1. ~~~shell
                     last | tee last.list | cut -d " " -f 1 ##只是将数据进行保存 不影响后续的操作.
                     ~~~
-
+          
                  2. 不同于>或者>> 是将所有的输入都写入某个文件,tee可以继续处理,而不是终结输入.
-
+          
               7. 有时候用到tee将内容写入新的文件中,需要对部分字段做处理,就要用到col(将tab转成空格键),join,paste,expand等关键字.
-
+          
               8. split 将文件进行分隔.
-
+          
                  1. ~~~shell
                     split -b 300k /etc/services services
                     ~~~
-
+          
           16. 正则表达式与文件格式化处理
 
               1. ^ 在括号之内[ ]代表反向选择,在[ ]之外则代表定位在首行.
@@ -663,24 +692,24 @@
                  1. ~~~shell
                     grep -v '^$' /etc/rsyslog.conf | grep -v '^#' ##  -v 是反选 ,表示去掉空格行和去掉注释行.每一个空行其实开头都有一个隐藏的$
                     ~~~
-
+          
               3. *代表有任意个可以为0个,.代表一定有一个字符的意思.
-
+          
                  1. ~~~shell
                     grep -n 'oo*' /etc/rsyslog.conf ##至少含有一个o的行.
                     ~~~
-
+          
                  2. ~~~shell
                     grep -n 'g.*g' /etc/rsyslog.conf ## .* 代表0个或者多个任意字符,过滤了含有g......g的行数.
                     ~~~
-
+          
               4. 限定连续RE字符范围{}
-
+          
                  1. ~~~shell
                     grep -n 'go\{2,5\}g' regular_express.txt 
                     ## {} 需要使用\转义 表示g后面接2-5个o的行.
                     ~~~
-
+          
               5. 正则表达式与一般在命令行输入的通配符并不相同
 
                  1. ~~~shell
@@ -688,34 +717,34 @@
                     ~~~
 
               6. sed具有比grep更强大的更改的功能,以后才了解.
-
+          
               7. 扩展正则表达式
-
+          
                  1. 重复一个或者一个以上的前一个RE字符. --> + 例如 grep -n 'go+d' 1.txt
                  2. 零个或者一个 ---> ?
                  3. 用或(or) 的方式找出数个字符串 --->  | 
                  4. 找出字符串群组  ----> ( )
-
+          
               8. awk 主要处理每一行的字段内的数据,而默认的字段的分隔符为"空格键或者Tab键".
-
+          
                  1. ~~~shell
                     last -n 5 | awk '{print $1 "\t" $3}'
                     ~~~
-
+          
                  2. awk可以使用<,>等,还可以做计算.
 
               9. 文件对比工具.
-
+          
                  1. diff 比较文本内容的行.
                  2. cmp 主要用于比较二进制文件.
                  3. patch 可以将旧数据更新到新的版本中.
-              
+          
           17. shell script 学习
-
+          
               1. 执行shell 需要具有r和x的权限,如果是sh 1.shell 这种方式执行,就只需要有r的权限即可.
-
+          
               2. 练习
-
+          
                  1. ~~~shell
                     #!/bin/bash
                     ## 创建三个文件 与当前的日志联动
@@ -732,7 +761,7 @@
                     touch "${file2}"
                     touch "${file3}"
                     ~~~
-
+          
                  2. ~~~shell
                     #!/bin/bash
                     ## 乘法计算
@@ -741,11 +770,11 @@
                     total=$((${firstNum}*${secondNum}))
                     echo -e "\n The result ${firstNum} * ${secondNum} is ===> ${total}"
                     ~~~
-
+          
               3. 使用sources 执行命令,使子线程的变量在父线程中生效.
-
+          
               4. 使用test进行判断
-
+          
                  1. ~~~shell
                     #!/bin/bash
                     ## 判断文件权限
@@ -760,24 +789,24 @@
                     echo "The filename: ${filename} is a ${filetype}"
                     echo "And the permission for you are : ${perm}"
                     ~~~
-
+          
               5. 使用[ ] 判断  括号两边需要有空格  
-
+          
                  1. ~~~shell
                     [ "lbt"==$name ]
                     ~~~
-
+          
               6. sh后的参数的序号
-
+          
                  1. ~~~shell
                     /path/to/scriptname  opt1    opt2  opt3   opt4
                     		${0}         ${1}    ${2}   ${3}   ${4} 
                     ~~~
-
+          
                  2. 可以在.shell文件通过$1 获取第一个参数.
-
+          
               7. 条件判断
-
+          
                  1. ~~~shell
                     if [空格 条件1 空格]; then
                     	当条件1成立执行的命令
@@ -787,7 +816,7 @@
                     	最后执行的命令
                     fi
                     ~~~
-
+          
                  2. ~~~shell
                     #!/bin/bash
                     if [ "${1}" == "hello" ]; then
@@ -798,7 +827,7 @@
                             echo "please input hello"
                     fi
                     ~~~
-
+          
                  3. 
 
 
