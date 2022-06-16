@@ -771,10 +771,21 @@
                     echo -e "\n The result ${firstNum} * ${secondNum} is ===> ${total}"
                     ~~~
           
-              3. 使用sources 执行命令,使子线程的变量在父线程中生效.
+              3. $() - 命令执行结果替换
           
-              4. 使用test进行判断
-          
+                 1. ~~~shell
+                    echo Today $(echo is $(date "+%Y-%m-%d"))
+                    ~~~
+              
+                 2. 执行$(date "+%Y-%m-%d")括号中的date "+%Y-%m-%d"，结果为2020-05-01
+                    替换$(date "+%Y-%m-%d")为执行结果2020-05-01，命令还剩下echo Today $(echo is 2020-05-01)
+                    同理执行$(echo is 2020-05-01)并替换，命令还剩下echo Today is 2020-05-01
+                    最终输出Today is 2020-05-01
+              
+              4. 使用sources 执行命令,使子线程的变量在父线程中生效.
+              
+              5. 使用test进行判断
+              
                  1. ~~~shell
                     #!/bin/bash
                     ## 判断文件权限
@@ -789,24 +800,24 @@
                     echo "The filename: ${filename} is a ${filetype}"
                     echo "And the permission for you are : ${perm}"
                     ~~~
-          
-              5. 使用[ ] 判断  括号两边需要有空格  
+              
+              6. 使用[ ] 判断  括号两边需要有空格  
           
                  1. ~~~shell
                     [ "lbt"==$name ]
                     ~~~
           
-              6. sh后的参数的序号
-          
+              7. sh后的参数的序号
+              
                  1. ~~~shell
                     /path/to/scriptname  opt1    opt2  opt3   opt4
                     		${0}         ${1}    ${2}   ${3}   ${4} 
                     ~~~
-          
+              
                  2. 可以在.shell文件通过$1 获取第一个参数.
-          
-              7. 条件判断
-          
+              
+              8. 条件判断
+              
                  1. ~~~shell
                     if [空格 条件1 空格]; then
                     	当条件1成立执行的命令
@@ -827,7 +838,7 @@
                             echo "please input hello"
                     fi
                     ~~~
-          
+              
                  3. 
 
 
