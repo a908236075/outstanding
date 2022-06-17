@@ -770,9 +770,11 @@
                     total=$((${firstNum}*${secondNum}))
                     echo -e "\n The result ${firstNum} * ${secondNum} is ===> ${total}"
                     ~~~
+                
+                 3. $((计算表达式))    echo $((13*6))
           
               3. $() - 命令执行结果替换
-          
+              
                  1. ~~~shell
                     echo Today $(echo is $(date "+%Y-%m-%d"))
                     ~~~
@@ -800,13 +802,13 @@
                     echo "The filename: ${filename} is a ${filetype}"
                     echo "And the permission for you are : ${perm}"
                     ~~~
-              
+          
               6. 使用[ ] 判断  括号两边需要有空格  
-          
+              
                  1. ~~~shell
-                    [ "lbt"==$name ]
+                [ "${name}" == "tom cat" ] && echo "Yes" ## ${name} 需要用" "括起来.不然不会作为一个整体进行比较.
                     ~~~
-          
+              
               7. sh后的参数的序号
               
                  1. ~~~shell
@@ -816,6 +818,8 @@
               
                  2. 可以在.shell文件通过$1 获取第一个参数.
               
+                 3. shift 可以拿掉之前的参数  shift 3 去除掉三个参数.
+              
               8. 条件判断
               
                  1. ~~~shell
@@ -823,23 +827,26 @@
                     	当条件1成立执行的命令
                     elif [空格 条件2 空格]; then
                     	当条件2成立执行的命令
-                    else
+                else
                     	最后执行的命令
                     fi
                     ~~~
-          
+              
                  2. ~~~shell
                     #!/bin/bash
+                    ## 注意 test 与 [ ] 判断直接的差别
                     if [ "${1}" == "hello" ]; then
                             echo "Hello,how are you"
-                    elif [ test -z "${1}" ]; then
+                    elif [ "${1}" == "" ]; then
                             echo "please input param"
                     else
                             echo "please input hello"
                     fi
-                    ~~~
-              
-                 3. 
+              ~~~
+                    
+                 3. test 一般是命令输入的形式 [ -z "${1}" ] 等价于 test -z "${1}",可以把[ ] 看做是test
+                 
+                 4.  
 
 
 
