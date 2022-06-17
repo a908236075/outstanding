@@ -770,7 +770,7 @@
                     total=$((${firstNum}*${secondNum}))
                     echo -e "\n The result ${firstNum} * ${secondNum} is ===> ${total}"
                     ~~~
-                
+                   
                  3. $((计算表达式))    echo $((13*6))
           
               3. $() - 命令执行结果替换
@@ -806,7 +806,7 @@
               6. 使用[ ] 判断  括号两边需要有空格  
               
                  1. ~~~shell
-                [ "${name}" == "tom cat" ] && echo "Yes" ## ${name} 需要用" "括起来.不然不会作为一个整体进行比较.
+                     [ "${name}" == "tom cat" ] && echo "Yes" ## ${name} 需要用" "括起来.不然不会作为一个整体进行比较.
                     ~~~
               
               7. sh后的参数的序号
@@ -827,7 +827,7 @@
                     	当条件1成立执行的命令
                     elif [空格 条件2 空格]; then
                     	当条件2成立执行的命令
-                else
+                      else
                     	最后执行的命令
                     fi
                     ~~~
@@ -842,11 +842,94 @@
                     else
                             echo "please input hello"
                     fi
-              ~~~
-                    
+              
                  3. test 一般是命令输入的形式 [ -z "${1}" ] 等价于 test -z "${1}",可以把[ ] 看做是test
-                 
-                 4.  
+              
+                 4. netstat -tuln 可以查看目前系统开放了哪些端口,0.0.0.0 是面向网络的.
+              
+                 5. ~~~shell
+                    #!/bin/bash
+                    echo -e "The ftp,ssh will be detect!!"
+                    testfile=/home/bin/checking.txt
+                    netstat -tuln > ${testfile}
+                    testing=$(grep ":22 " "${testfile}")
+                    if [ "${testing}" != "" ]; then
+                    echo -e "SSH is running in your system!!"
+                    fi
+                    ## 遇到了错误有
+                    ## 1.testfile 如果不存在会创建的 不用单独判断
+                    ## 2.${testfile} 在使用的时候需要加"" 这才才会是环境变量进行转换
+                    ## 3.if 空格[空格 判断 空格] 忘记加空格
+                    ~~~
+              
+                 6. ~~~shell
+                    #!/bin/bash
+                    read -p "Please input date: " startdate
+                    date1=$(echo "${startdate}")
+                    echo "${date1}"
+                    declare -i date_dem=$(date --date="${date1}" +%s)
+                    declare -i date_now=$(date +%s)
+                    declare -i date_total_s=$((${date_dem}-${date_now}))
+                    declare -i date_total_d=$((${date_total_s}/60/60/24))
+                    if [ "${date_total_d}" -lt "0" ]; then
+                    echo "You had been  before: " $((-1*${date_total_d}))
+                    else
+                    echo "You will after: ${date_total_d} days "
+                    fi
+                    ## 遇到的问题
+                    ## 1.计算公式中的变量 不需要用" " 括起来 这和 [ ] if条件判断不太一样
+                    ~~~
+              
+              9. case .... esac 判断
+              
+                 1. ~~~shell
+                    #!/bin/bash
+                    case ${1} in ##参数 in
+                    "hello")
+                            echo "hello! How are you?"
+                            ;;  ## 结束 必须要有
+                    "")
+                            echo "Please input your params,ex> {${0} someword}"
+                            ;;
+                    *)     echo "Use  ${0} {hello}" ##其余都不匹配的时候
+                    esac
+                    ~~~
+              
+              10. 利用 function功能
+              
+                  1. 由于shell 执行的顺序是**从上到下 从左到右** 所以function需要先定义,才能使用.
+                  2. function fname(){ 程序段 }
+                  3. function中也有内置变量,$0表示function名 $1表示第一个变量,在调用function时候,需要区分是函数的$1,还是执行shell 的第一个参数
+              
+              11. 循环
+              
+                  1. while do done,until do done 不定循环
+              
+                     - ~~~shell
+                       #!/bin/bash
+                       while [ "${ny}" != "yes" -a "${ny}" != "YES" ]
+                       do
+                               read -p "Please input 'yes' or 'YES' to intterupt running " ny
+                       done
+                               echo "your input is right!!"
+                       ## 遇到的问题
+                       ## 1.while的[空格 判断条件 空格] 忘记加空格
+                       ## 2.[空格 判断条件 空格] 判断条件的 yes 用 " "包含进来. 
+                       ~~~
+              
+                     - ~~~shell
+                       #!/bin/bash
+                       until [ "${ny}" == "yes" -o "${ny}" == "YES" ]
+                       do
+                               read -p "Please input 'yes' or 'YES' to intterupt running " ny
+                       done
+                               echo "your input is right!!"
+                       
+                       ~~~
+              
+                  2. for...do ..done (固定循环)
+              
+                     1. 
 
 
 
