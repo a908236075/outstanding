@@ -842,7 +842,8 @@
                     else
                             echo "please input hello"
                     fi
-          
+                 ~~~
+                    
                  3. test 一般是命令输入的形式 [ -z "${1}" ] 等价于 test -z "${1}",可以把[ ] 看做是test
           
                  4. netstat -tuln 可以查看目前系统开放了哪些端口,0.0.0.0 是面向网络的.
@@ -860,7 +861,7 @@
                     ## 1.testfile 如果不存在会创建的 不用单独判断
                     ## 2.${testfile} 在使用的时候需要加"" 这才才会是环境变量进行转换
                     ## 3.if 空格[空格 判断 空格] 忘记加空格
-                    ~~~
+                 ~~~
           
                  6. ~~~shell
                     #!/bin/bash
@@ -928,6 +929,24 @@
                        ~~~
           
                   2. for...do ..done (固定循环)
+                  
+                     1. ~~~shell
+                        #!/bin/bash
+                        users=$(cut -d ":" -f1 /etc/passwd)
+                        ##echo "${users}"
+                        for user in ${users}
+                        do
+                                id ${user}
+                        done
+                        ~~~
+                  
+                     2. ~~~shell
+                        #!/bin/bash
+                        for animal in dog cat elephant
+                        do
+                                echo "the zoo hava animal : ${animal}"
+                        done
+                        ~~~
           
           18. Linux账号管理
           
@@ -960,52 +979,66 @@
                     #删除用户组
                     groupdel mygroup
                     ~~~
+
+          19. 磁盘配额(Quata)与进阶文件系统管理
           
-          19. 磁盘配额的应用与实践
+              1. 磁盘配额一般会针对用户,用户组,路径进行限制.
           
-              1. xfs_quota -x -x 相关命令可以创建分区 将更具用户组和用户以及路径设置分区权限等.
+              2. 磁盘配额使用限制
           
-              2. LVM 逻辑卷管理器 
-          
-              3. 下载gdisk  
-          
+                 1. 在ETX文件系统中仅能针对整个filesystem.
+                 2. 核心必须支持磁盘配额(Quata)
+                 3. 只对一般身份使用有效,root是不能够进行限制的,因为它拥有所有资源.
+                 4. 若启用了SELinux,非所有目录均可设定quata,SELinux 防止用户误操作磁盘,如果想设置需要先关闭它.
+              
+              3. 实战操作
+              
                  1. ~~~shell
-                    yum install gdisk -y
+                    ## 查看文件系统类型 是xfs还是etx
+                    [root@bogon ~]# df -hT /home/
+                    文件系统       类型  容量  已用  可用 已用% 挂载点
+                    /dev/sda3      xfs    20G  4.8G   15G   25% /
                     ~~~
+              
+              4. 磁盘配额的应用与实践
+              
+                 1. xfs_quota -x -x 相关命令可以创建分区 将更具用户组和用户以及路径设置分区权限等.
+              
+                 2. LVM 逻辑卷管理器 
           
-              4. 观察磁盘分区的状态
-          
-                 1. ~~~shell
-                    lsblk ## 列出系统所有的磁盘与磁盘内的分区信息.
-                    NAME            MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
-                    sda               8:0    0   30G  0 disk
-                    ├─sda1            8:1    0  512M  0 part /boot
-                    └─sda2            8:2    0 29.5G  0 part
-                      ├─centos-root 253:0    0 28.5G  0 lvm  /
-                      └─centos-swap 253:1    0    1G  0 lvm  [SWAP]
-                    sr0              11:0    1 1024M  0 rom
-                    ## disk 磁盘  part 分区 
-                    ~~~
-          
-                 2. ~~~shell
-                    blkid ##列出设备的UUID  
-                    ~~~
-          
-                 3. ~~~shell
-                    parted /dev/sda print ## 列出磁盘的相关信息
-                    Model: VMware, VMware Virtual S (scsi)
-                    Disk /dev/sda: 32.2GB
-                    Sector size (logical/physical): 512B/512B
-                    Partition Table: msdos
-                    Disk Flags:
-                    
-                    Number  Start   End     Size    Type     File system  Flags
-                     1      1049kB  538MB   537MB   primary  xfs          boot
-                     2      538MB   32.2GB  31.7GB  primary               lvm
-                    ## 非常重要
-                    ## Partition Table: msdos msdos 分区格式是MBR,用fdisk命令,gpt分区格式是GPT,用gdisk命令!!!
-                    ~~~
-          
+                 3. 观察磁盘分区的状态
+              
+                    1. ~~~shell
+                       lsblk ## 列出系统所有的磁盘与磁盘内的分区信息.
+                       NAME            MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+                       sda               8:0    0   30G  0 disk
+                       ├─sda1            8:1    0  512M  0 part /boot
+                       └─sda2            8:2    0 29.5G  0 part
+                         ├─centos-root 253:0    0 28.5G  0 lvm  /
+                         └─centos-swap 253:1    0    1G  0 lvm  [SWAP]
+                       sr0              11:0    1 1024M  0 rom
+                       ## disk 磁盘  part 分区 
+                       ~~~
+              
+                    2. ~~~shell
+                       blkid ##列出设备的UUID  
+                       ~~~
+              
+                    3. ~~~shell
+                       parted /dev/sda print ## 列出磁盘的相关信息
+                       Model: VMware, VMware Virtual S (scsi)
+                       Disk /dev/sda: 32.2GB
+                       Sector size (logical/physical): 512B/512B
+                       Partition Table: msdos
+                       Disk Flags:
+                       
+                       Number  Start   End     Size    Type     File system  Flags
+                        1      1049kB  538MB   537MB   primary  xfs          boot
+                        2      538MB   32.2GB  31.7GB  primary               lvm
+                       ## 非常重要
+                       ## Partition Table: msdos msdos 分区格式是MBR,用fdisk命令,gpt分区格式是GPT,用gdisk命令!!!
+                       ~~~
+              
                  4. 
 
 
