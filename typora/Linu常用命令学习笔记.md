@@ -960,8 +960,53 @@
                     #删除用户组
                     groupdel mygroup
                     ~~~
-
-
+          
+          19. 磁盘配额的应用与实践
+          
+              1. xfs_quota -x -x 相关命令可以创建分区 将更具用户组和用户以及路径设置分区权限等.
+          
+              2. LVM 逻辑卷管理器 
+          
+              3. 下载gdisk  
+          
+                 1. ~~~shell
+                    yum install gdisk -y
+                    ~~~
+          
+              4. 观察磁盘分区的状态
+          
+                 1. ~~~shell
+                    lsblk ## 列出系统所有的磁盘与磁盘内的分区信息.
+                    NAME            MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+                    sda               8:0    0   30G  0 disk
+                    ├─sda1            8:1    0  512M  0 part /boot
+                    └─sda2            8:2    0 29.5G  0 part
+                      ├─centos-root 253:0    0 28.5G  0 lvm  /
+                      └─centos-swap 253:1    0    1G  0 lvm  [SWAP]
+                    sr0              11:0    1 1024M  0 rom
+                    ## disk 磁盘  part 分区 
+                    ~~~
+          
+                 2. ~~~shell
+                    blkid ##列出设备的UUID  
+                    ~~~
+          
+                 3. ~~~shell
+                    parted /dev/sda print ## 列出磁盘的相关信息
+                    Model: VMware, VMware Virtual S (scsi)
+                    Disk /dev/sda: 32.2GB
+                    Sector size (logical/physical): 512B/512B
+                    Partition Table: msdos
+                    Disk Flags:
+                    
+                    Number  Start   End     Size    Type     File system  Flags
+                     1      1049kB  538MB   537MB   primary  xfs          boot
+                     2      538MB   32.2GB  31.7GB  primary               lvm
+                    ## 非常重要
+                    ## Partition Table: msdos msdos 分区格式是MBR,用fdisk命令,gpt分区格式是GPT,用gdisk命令!!!
+                    ~~~
+          
+                 4. 
 
 
 
