@@ -1006,7 +1006,19 @@
               
                  2. LVM 逻辑卷管理器 
           
-                 3. 观察磁盘分区的状态
+                 3. **磁盘,分区与文件系统:**磁盘的文件一般是/dev/sd[a-p],磁盘又会像window中分C盘,D盘,在linux 中叫做分区,分区的格式有MBR和GPT两种,在分区操作之前,需要格式化成固定的文件系统,因为不同的文件系统权限和属性不同,常见的文件系统格式有ext2,xfs,ntfs,fat等. 传统的磁盘一个分区只能被格式化成一种文件系统.先进的则不同,所以一个可挂载的数据为一个**文件系统**而不是一个文件分区.
+              
+                 4. **文件系统:**文件系统通常将文件属性和权限放在inode中,而数据则分开放在数据区块中.文件系统被分了好多inode.
+                 
+                 5. **挂载点**:每个文件系统都有独立inode,区块,超级区块等信息,文件系统能够连接到**目录树**,才能被我们使用,**挂载点一定要是目录,改目录进入该文件系统的入口.**
+                 
+                 6. ext文件系统使用命令 dumpe2fs 查询inode等系统信息,而xfs使用xfs_info.
+                 
+                 7. df 列出文件系统的**整体**磁盘使用量. 常用命令为 df -h
+                 
+                 8. du 查看文件系统的磁盘使用量.
+                 
+                 9. 观察磁盘分区的状态
               
                     1. ~~~shell
                        lsblk ## 列出系统所有的磁盘与磁盘内的分区信息.
@@ -1019,17 +1031,17 @@
                        sr0              11:0    1 1024M  0 rom
                        ## disk 磁盘  part 分区 
                        ~~~
-              
+                 
                     2. ~~~shell
                        blkid ##列出设备的UUID  
                        ~~~
-              
+                 
                     3. ~~~shell
                        parted /dev/sda print ## 列出磁盘的相关信息
                        Model: VMware, VMware Virtual S (scsi)
                        Disk /dev/sda: 32.2GB
                        Sector size (logical/physical): 512B/512B
-                       Partition Table: msdos
+                       Partition Table: msdos ## 分区格式是MBR,用fdisk命令
                        Disk Flags:
                        
                        Number  Start   End     Size    Type     File system  Flags
@@ -1038,8 +1050,8 @@
                        ## 非常重要
                        ## Partition Table: msdos msdos 分区格式是MBR,用fdisk命令,gpt分区格式是GPT,用gdisk命令!!!
                        ~~~
-              
-                 4. 
+                 
+                 10. 
 
 
 
