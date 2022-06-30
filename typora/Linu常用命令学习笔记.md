@@ -1158,14 +1158,59 @@
              128757 root      20   0  115880   2360   1792 S  0.0  0.2   0:00.04 bash  
              ~~~
 
-      11. nice [-n 数字] command 给 命令赋值一个优先值  
+      11. nice [-n 数字] command 给 命令赋值一个优先值  root用户可以调整的范围是:-20-19 一般用户调整的范围是:0-19.一般用户只能越调越高.
 
       12. renice [number] PID 已存在的进程的nice重新调整.
 
       13. 系统资源的观察
 
           1. free 观察内存使用情况.
+          
           2. uname:查阅系统和核心相关信息.
+          
+          3. netstat:追踪网络或socket文件
+          
+             1. ~~~shell
+                [root@localhost /]# netstat
+                Active Internet connections (w/o servers)
+                Proto Recv-Q Send-Q Local Address           Foreign Address         State
+                tcp        0      0 localhost.localdoma:ssh 192.168.199.1:58479     ESTABLISHED
+                tcp        0      0 localhost.localdoma:ssh 192.168.199.1:59255     ESTABLISHED
+                tcp        0      0 localhost.localdoma:ssh 192.168.199.1:58480     ESTABLISHED
+                tcp        0     48 localhost.localdoma:ssh 192.168.199.1:59254     ESTABLISHED
+                Active UNIX domain sockets (w/o servers)
+                Proto RefCnt Flags       Type       State         I-Node   Path
+                unix  2      [ ]         DGRAM                    11718    /run/systemd/shutdownd
+                unix  3      [ ]         DGRAM                    9177     /run/systemd/notify
+                unix  2      [ ]         DGRAM                    9179     /run/systemd/cgroups-agent
+                #两部分组成:网络的连接和Linux上面的socket进程相关性部分.
+                ## Recv-Q 非由用户进程连接到此socket的复制的总Bytes数
+                ## Local Addrs 本地端的 ip port 情况.
+                ## State 连接状态 :建立(ESTABLISHED) 和监听(LISTEN)
+                # 第二部分socket文件:可以沟通两个进程之间的信息.
+                ## RefCnt:连接到此socket的进程的数量.
+                ## Type:socket存取的类型,主要有确认连接的STERAM和不需要确认的DGRAM两种.
+                ## State:如果为CONNECTED表示多个进程之间已经建立了连接.
+                ## Path:连接到此socket的相关进程的路径,或是相关数据输出的路径.
+                ~~~
+          
+             2. ~~~shell
+                [root@localhost /] netstat -tulnp # 找出目前系统上已在监听的网络连接以及pid
+                Active Internet connections (only servers)
+                Proto Recv-Q Send-Q  Local Address           Foreign Address         State
+                tcp        0      0  0.0.0.0:2181            0.0.0.0:*               LISTEN    PID/Program name
+                101762/docker-proxy
+                ~~~
+          
+             3. ~~~shell
+                [root@localhost /]# pidof systemd rsyslogd
+                1 36720
+                ## 根据服务名字找到pid
+                ~~~
+          
+          4. SELiuux 部分以后再补充
+          
+          5. 
 
 
 
