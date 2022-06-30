@@ -608,19 +608,19 @@
               1. **标准输入:代码为0,使用<或<<**
 
               2. **标准输出:代码为1,使用>或>>**
-          
+
               3. **标准错误输出:代码为2,使用2>或2>>;**
 
               4. ~~~shell
                  find /home/ -name .bashrc >list_right 2>list_error ## 将正确信息和错误信息分别输出
                  ~~~
-          
+
               5. 如果想让正确的信息和错误的信息都写入到**同一个文件中**,注意写法
-          
+
                  1. ~~~shell
                     find /home/ -name .bashrc >list_right 2>list_right ##错误!!!!
                     ~~~
-          
+
                  2. ~~~shell
                     find /home/ -name .bashrc >list_right 2>&1 ## 正确
                     find /home/ -name .bashrc &>list_right  ## 正确
@@ -642,43 +642,43 @@
 
           15. 管道命令
               1. 管道命令仅会处理标准输出,对于标准错误会予以忽略.
-          
+
               2. cut -d 后面接分个字符 -f 第几段      用分个字符将输入切分成几段 -f 后面接数组 取出第几段
-          
+
                  1. ```shell
                     echo $PATH | cut -d ':' -f 5 ##/usr/local/java/jdk1.8.0_291/bin
                     ```
-          
+
               3. grep 提取 -v 反向选取  
-          
+
                  1. ```shell
                     last | grep -v "root"  ## 命令中不包含root的字符.
                     ```
-          
+
               4. uniq 唯一显示
-          
+
                  1. ~~~shell
                      cat /etc/passwd | sort -n | uniq -c ##-c 进行计数
                     ~~~
-          
+
               5. wc [lwm] 查看文件的行数 字数和字符数.
-          
+
               6. tee 将处理的数据直接写入到文件或者屏幕上.
-          
+
                  1. ~~~shell
                     last | tee last.list | cut -d " " -f 1 ##只是将数据进行保存 不影响后续的操作.
                     ~~~
-          
+
                  2. 不同于>或者>> 是将所有的输入都写入某个文件,tee可以继续处理,而不是终结输入.
-          
+
               7. 有时候用到tee将内容写入新的文件中,需要对部分字段做处理,就要用到col(将tab转成空格键),join,paste,expand等关键字.
-          
+
               8. split 将文件进行分隔.
-          
+
                  1. ~~~shell
                     split -b 300k /etc/services services
                     ~~~
-          
+
           16. 正则表达式与文件格式化处理
 
               1. ^ 在括号之内[ ]代表反向选择,在[ ]之外则代表定位在首行.
@@ -692,24 +692,24 @@
                  1. ~~~shell
                     grep -v '^$' /etc/rsyslog.conf | grep -v '^#' ##  -v 是反选 ,表示去掉空格行和去掉注释行.每一个空行其实开头都有一个隐藏的$
                     ~~~
-          
+
               3. *代表有任意个可以为0个,.代表一定有一个字符的意思.
-          
+
                  1. ~~~shell
                     grep -n 'oo*' /etc/rsyslog.conf ##至少含有一个o的行.
                     ~~~
-          
+
                  2. ~~~shell
                     grep -n 'g.*g' /etc/rsyslog.conf ## .* 代表0个或者多个任意字符,过滤了含有g......g的行数.
                     ~~~
-          
+
               4. 限定连续RE字符范围{}
-          
+
                  1. ~~~shell
                     grep -n 'go\{2,5\}g' regular_express.txt 
                     ## {} 需要使用\转义 表示g后面接2-5个o的行.
                     ~~~
-          
+
               5. 正则表达式与一般在命令行输入的通配符并不相同
 
                  1. ~~~shell
@@ -717,34 +717,34 @@
                     ~~~
 
               6. sed具有比grep更强大的更改的功能,以后才了解.
-          
+
               7. 扩展正则表达式
-          
+
                  1. 重复一个或者一个以上的前一个RE字符. --> + 例如 grep -n 'go+d' 1.txt
                  2. 零个或者一个 ---> ?
                  3. 用或(or) 的方式找出数个字符串 --->  | 
                  4. 找出字符串群组  ----> ( )
-          
+
               8. awk 主要处理每一行的字段内的数据,而默认的字段的分隔符为"空格键或者Tab键".
-          
+
                  1. ~~~shell
                     last -n 5 | awk '{print $1 "\t" $3}'
                     ~~~
-          
+
                  2. awk可以使用<,>等,还可以做计算.
 
               9. 文件对比工具.
-          
+
                  1. diff 比较文本内容的行.
                  2. cmp 主要用于比较二进制文件.
                  3. patch 可以将旧数据更新到新的版本中.
-          
+
           17. shell script 学习
-          
+
               1. 执行shell 需要具有r和x的权限,如果是sh 1.shell 这种方式执行,就只需要有r的权限即可.
-          
+
               2. 练习
-          
+
                  1. ~~~shell
                     #!/bin/bash
                     ## 创建三个文件 与当前的日志联动
@@ -761,7 +761,7 @@
                     touch "${file2}"
                     touch "${file3}"
                     ~~~
-          
+
                  2. ~~~shell
                     #!/bin/bash
                     ## 乘法计算
@@ -772,22 +772,22 @@
                     ~~~
                    
                  3. $((计算表达式))    echo $((13*6))
-          
+
               3. $() - 命令执行结果替换
-          
+
                  1. ~~~shell
                     echo Today $(echo is $(date "+%Y-%m-%d"))
                     ~~~
-          
+
                  2. 执行$(date "+%Y-%m-%d")括号中的date "+%Y-%m-%d"，结果为2020-05-01
                     替换$(date "+%Y-%m-%d")为执行结果2020-05-01，命令还剩下echo Today $(echo is 2020-05-01)
                     同理执行$(echo is 2020-05-01)并替换，命令还剩下echo Today is 2020-05-01
                     最终输出Today is 2020-05-01
-          
+
               4. 使用sources 执行命令,使子线程的变量在父线程中生效.
-          
+
               5. 使用test进行判断
-          
+
                  1. ~~~shell
                     #!/bin/bash
                     ## 判断文件权限
@@ -802,26 +802,26 @@
                     echo "The filename: ${filename} is a ${filetype}"
                     echo "And the permission for you are : ${perm}"
                     ~~~
-          
+
               6. 使用[ ] 判断  括号两边需要有空格  
-          
+
                  1. ~~~shell
                      [ "${name}" == "tom cat" ] && echo "Yes" ## ${name} 需要用" "括起来.不然不会作为一个整体进行比较.
                     ~~~
-          
+
               7. sh后的参数的序号
-          
+
                  1. ~~~shell
                     /path/to/scriptname  opt1    opt2  opt3   opt4
                     		${0}         ${1}    ${2}   ${3}   ${4} 
                     ~~~
-          
+
                  2. 可以在.shell文件通过$1 获取第一个参数.
-          
+
                  3. shift 可以拿掉之前的参数  shift 3 去除掉三个参数.
-          
+
               8. 条件判断
-          
+
                  1. ~~~shell
                     if [空格 条件1 空格]; then
                     	当条件1成立执行的命令
@@ -831,7 +831,7 @@
                     	最后执行的命令
                     fi
                     ~~~
-          
+
                  2. ~~~shell
                     #!/bin/bash
                     ## 注意 test 与 [ ] 判断直接的差别
@@ -842,12 +842,13 @@
                     else
                             echo "please input hello"
                     fi
+                    ~~~
                  ~~~
                     
                  3. test 一般是命令输入的形式 [ -z "${1}" ] 等价于 test -z "${1}",可以把[ ] 看做是test
-          
+                 
                  4. netstat -tuln 可以查看目前系统开放了哪些端口,0.0.0.0 是面向网络的.
-          
+                 
                  5. ~~~shell
                     #!/bin/bash
                     echo -e "The ftp,ssh will be detect!!"
@@ -862,7 +863,7 @@
                     ## 2.${testfile} 在使用的时候需要加"" 这才才会是环境变量进行转换
                     ## 3.if 空格[空格 判断 空格] 忘记加空格
                  ~~~
-          
+
                  6. ~~~shell
                     #!/bin/bash
                     read -p "Please input date: " startdate
@@ -880,9 +881,9 @@
                     ## 遇到的问题
                     ## 1.计算公式中的变量 不需要用" " 括起来 这和 [ ] if条件判断不太一样
                     ~~~
-          
+
               9. case .... esac 判断
-          
+
                  1. ~~~shell
                     #!/bin/bash
                     case ${1} in ##参数 in
@@ -895,17 +896,17 @@
                     *)     echo "Use  ${0} {hello}" ##其余都不匹配的时候
                     esac
                     ~~~
-          
+
               10. 利用 function功能
-          
+
                   1. 由于shell 执行的顺序是**从上到下 从左到右** 所以function需要先定义,才能使用.
                   2. function fname(){ 程序段 }
                   3. function中也有内置变量,$0表示function名 $1表示第一个变量,在调用function时候,需要区分是函数的$1,还是执行shell 的第一个参数
-          
+
               11. 循环
-          
+
                   1. while do done,until do done 不定循环
-          
+
                      - ~~~shell
                        #!/bin/bash
                        while [ "${ny}" != "yes" -a "${ny}" != "YES" ]
@@ -917,7 +918,7 @@
                        ## 1.while的[空格 判断条件 空格] 忘记加空格
                        ## 2.[空格 判断条件 空格] 判断条件的 yes 用 " "包含进来. 
                        ~~~
-          
+
                      - ~~~shell
                        #!/bin/bash
                        until [ "${ny}" == "yes" -o "${ny}" == "YES" ]
@@ -927,7 +928,7 @@
                                echo "your input is right!!"
                        
                        ~~~
-          
+
                   2. for...do ..done (固定循环)
                   
                      1. ~~~shell
@@ -947,15 +948,15 @@
                                 echo "the zoo hava animal : ${animal}"
                         done
                         ~~~
-          
+
           18. Linux账号管理
-          
+
               1. 查询账号各参数的意思 略
-          
+
               2. id 命令 查询对应用户的所属分组等信息  id testuser
-          
+
               3. 用户管理
-          
+
                  1. ~~~shell
                     #添加用户
                     ## useradd [-u UID 即用户标识] [-g 初始用户组] [-G 次要用户组 账号还可以加入的用户组] [-s shell 例如nolgin shell]
@@ -966,9 +967,9 @@
                     #删除用户
                     userdel -r testuser  ## 连home目录一起删除.
                     ~~~
-          
+
               4. 用户组管理
-          
+
                  1. ~~~shell
                     #添加用户组
                     ## groupadd [-g gid] [-r 建立系统用户组] 用户组名称 用户组名
@@ -981,11 +982,11 @@
                     ~~~
 
           19. 磁盘配额(Quata)与进阶文件系统管理
-          
+
               1. 磁盘配额一般会针对用户,用户组,路径进行限制.
-          
+
               2. 磁盘配额使用限制
-          
+
                  1. 在ETX文件系统中仅能针对整个filesystem.
                  2. 核心必须支持磁盘配额(Quata)
                  3. 只对一般身份使用有效,root是不能够进行限制的,因为它拥有所有资源.
@@ -1005,6 +1006,7 @@
                  1. xfs_quota -x -x 相关命令可以创建分区 将更具用户组和用户以及路径设置分区权限等.
               
                  2. LVM 逻辑卷管理器 
+                 <<<<<<< HEAD
           
                  3. **磁盘,分区与文件系统:**磁盘的文件一般是/dev/sd[a-p],磁盘又会像window中分C盘,D盘,在linux 中叫做分区,分区的格式有MBR和GPT两种,在分区操作之前,需要格式化成固定的文件系统,因为不同的文件系统权限和属性不同,常见的文件系统格式有ext2,xfs,ntfs,fat等. 传统的磁盘一个分区只能被格式化成一种文件系统.先进的则不同,所以一个可挂载的数据为一个**文件系统**而不是一个文件分区.
               
@@ -1019,15 +1021,15 @@
                  8. du 查看文件系统的磁盘使用量.
                  
                  9. 观察磁盘分区的状态
-              
+
                     1. ~~~shell
                        lsblk ## 列出系统所有的磁盘与磁盘内的分区信息.
                        NAME            MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
                        sda               8:0    0   30G  0 disk
                        ├─sda1            8:1    0  512M  0 part /boot
                        └─sda2            8:2    0 29.5G  0 part
-                         ├─centos-root 253:0    0 28.5G  0 lvm  /
-                         └─centos-swap 253:1    0    1G  0 lvm  [SWAP]
+                       ├─centos-root 253:0    0 28.5G  0 lvm  /
+                       └─centos-swap 253:1    0    1G  0 lvm  [SWAP]
                        sr0              11:0    1 1024M  0 rom
                        ## disk 磁盘  part 分区 
                        ~~~
@@ -1043,15 +1045,127 @@
                        Sector size (logical/physical): 512B/512B
                        Partition Table: msdos ## 分区格式是MBR,用fdisk命令
                        Disk Flags:
-                       
+                                          
                        Number  Start   End     Size    Type     File system  Flags
-                        1      1049kB  538MB   537MB   primary  xfs          boot
-                        2      538MB   32.2GB  31.7GB  primary               lvm
+                       1      1049kB  538MB   537MB   primary  xfs          boot
+                       2      538MB   32.2GB  31.7GB  primary               lvm
                        ## 非常重要
                        ## Partition Table: msdos msdos 分区格式是MBR,用fdisk命令,gpt分区格式是GPT,用gdisk命令!!!
                        ~~~
-                 
-                 10. 
+
+ 20. 进程管理与SELiuux 初探
+
+     1. 进程ID:系统只认识二进制文件,每一次执行任务都会触发/bin/bash这个二进制文件去执行任务,根据UID/GID生成PID,用来标识进程.
+
+      2. **程序**是二进制文件,一般存放在磁盘中,**进程**是将程序的代码和所需要的数据加载到内存中,并生成PID,是正在运行的程序.
+
+      3. 一般的命令例如touch 执行后就会结束进程,但是向crontab有关的要一直查看是否任务需要执行,一直要占用进程,常驻在内存当中这种称为**服务**(deamon);
+
+      4. 后台执行 在命令后面加一个&  使其在后台执行.
+
+         1. ~~~shell
+            tar -zpcf /tmp/1.gz /etc/ &
+            ~~~
+
+      5. 把当前工作丢入背景中: Ctrl + Z  
+
+      6. jobs 查看丢入背景中工作,+代表最近被放入到背景 的工作号码,-代表第二个.
+
+         1. ~~~shell
+            [root@bogon bin]# jobs -l
+            [1]-   305 停止                  vi hello.sh
+            [2]+  3102 停止                  vi hello-2.sh
+            ~~~
+
+         2. ~~~shell
+            fg %1  ## 取第一个放入背景中的job
+            ~~~
+
+         3. ~~~shell
+            [root@bogon bin]# jobs
+            [2]+  已停止               vi hello-2.sh
+            [root@bogon bin]# kill -9 %2; jobs    ### 杀死后台中的工作
+            [2]+  已停止               vi hello-2.sh
+            ~~~
+
+      7. nohup 命令可以是任务在脱机的情况下依然执行.
+
+      8. ps -l  仅观察自己的bash相关进程.
+
+         1. ~~~shell
+            [root@bogon bin]# ps -l
+            F S   UID    PID   PPID  C PRI NI ADDR SZ WCHAN        TTY      TIME     CMD
+            0 R     0   4730 128757  0  80    0 - 38329 -          pts/2    00:00:00 ps
+            4 S     0 126134 126114  0  80    0 - 28970 do_wai     pts/2    00:00:00 bash
+            4 S     0 128757 126134  0  80    0 - 28970 do_wai     pts/2    00:00:00 bash
+            # F 进程旗标 说明进程的总结权限 4 为root 权限.
+            # S 代表进程的状态   R(Running) S(Sleep) Z 僵尸进程.
+            # PRI/NI CUP所执行的优先级 越小越优先.
+            # ADDR SZ WCHAN 都与内存有关
+            # TTY 登入者的终端位置 
+            # TIME 耗费CUP的时间
+            # CMD 命令
+            ~~~
+
+      9. ps  aux 显示系统所有的进程
+
+         1. ~~~shell
+            root@bogon bin]# ps aux
+            USER        PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+            root          1  0.0  0.3  51732  3096 ?        Ss   6月27   0:41 /usr/lib/systemd/systemd --switched-root --syste
+            root          2  0.0  0.0      0     0 ?        S    6月27   0:00 [kthreadd]
+            # STAT 状态 
+            # COMMAND 命令
+            root@bogon bin]# ps axjf   树形结构显示进程  
+            PPID    PID   PGID    SID TTY          TPGID STAT   UID   TIME COMMAND
+                 1    849    849    849 ?            -1 Ss       0   0:00 /usr/sbin/sshd -D
+               849 126114 126114 126114 ?            -1 Ss       0   0:00  \_ sshd: root@pts/2
+            126114 126134 126134 126134 pts/2      5447 Ss       0   0:00      \_ -bash
+            126134 128757 128757 126134 pts/2      5447 S        0   0:00          \_ bash
+            128757   5447   5447 126134 pts/2      5447 R+       0   0:00              \_ ps axjf
+            ~~~
+
+      10. top命令
+
+          1. ~~~shell
+             top -d 2 ## 每两秒更新一次top,观察整体的信息.
+             top - 17:39:51 up 3 days, 17:06,  2 users,  load average: 0.03, 0.04, 0.05
+             Tasks: 106 total,   2 running, 104 sleeping,   0 stopped,   0 zombie
+             %Cpu(s):   0.0/0.0     0[                                                                                        ]
+             KiB Mem :   995684 total,    70760 free,   313748 used,   611176 buff/cache
+             KiB Swap:   524284 total,   401148 free,   123136 used.   488896 avail Mem 
+             
+             PID USER      PR  NI    VIRT    RES    SHR S %CPU %MEM     TIME+ COMMAND                                       
+             285 root      20   0       0      0      0 S  0.5  0.0   1:58.20 xfsaild/sda3                                  
+               1 root      20   0   51732   3096   2004 S  0.0  0.3   0:42.00 systemd 
+             # PR 优先级 越小越好
+             # TIME+ 累计占用cpu 的时间.
+             ~~~
+
+          2. top命令执行的时候 按M可以切换为按照内存进行排序.
+
+          3. ~~~shell
+             [root@bogon bin] echo $$   打印当前bash的pid
+             128757
+             [root@bogon bin] top -d 2 -p 128757  ## 只观察当前bash进程
+             top - 17:56:13 up 3 days, 17:23,  2 users,  load average: 0.01, 0.02, 0.05
+             Tasks:   1 total,   0 running,   1 sleeping,   0 stopped,   0 zombie
+             %Cpu(s):  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+             KiB Mem :   995684 total,    70884 free,   313624 used,   611176 buff/cache
+             KiB Swap:   524284 total,   401148 free,   123136 used.   489020 avail Mem 
+             
+                PID USER      PR  NI    VIRT    RES    SHR S %CPU %MEM     TIME+ COMMAND                                       
+             128757 root      20   0  115880   2360   1792 S  0.0  0.2   0:00.04 bash  
+             ~~~
+
+      11. nice [-n 数字] command 给 命令赋值一个优先值  
+
+      12. renice [number] PID 已存在的进程的nice重新调整.
+
+      13. 系统资源的观察
+
+          1. free 观察内存使用情况.
+          2. uname:查阅系统和核心相关信息.
 
 
 
