@@ -843,27 +843,26 @@
                             echo "please input hello"
                     fi
                     ~~~
-                 ~~~
-                    
+          
                  3. test 一般是命令输入的形式 [ -z "${1}" ] 等价于 test -z "${1}",可以把[ ] 看做是test
-                 
+          
                  4. netstat -tuln 可以查看目前系统开放了哪些端口,0.0.0.0 是面向网络的.
-                 
+          
                  5. ~~~shell
-                    #!/bin/bash
-                    echo -e "The ftp,ssh will be detect!!"
-                    testfile=/home/bin/checking.txt
-                    netstat -tuln > ${testfile}
-                    testing=$(grep ":22 " "${testfile}")
-                    if [ "${testing}" != "" ]; then
-                    echo -e "SSH is running in your system!!"
-                    fi
-                    ## 遇到了错误有
-                    ## 1.testfile 如果不存在会创建的 不用单独判断
-                    ## 2.${testfile} 在使用的时候需要加"" 这才才会是环境变量进行转换
-                    ## 3.if 空格[空格 判断 空格] 忘记加空格
-                 ~~~
-
+                       #!/bin/bash
+                       echo -e "The ftp,ssh will be detect!!"
+                       testfile=/home/bin/checking.txt
+                       netstat -tuln > ${testfile}
+                       testing=$(grep ":22 " "${testfile}")
+                       if [ "${testing}" != "" ]; then
+                       echo -e "SSH is running in your system!!"
+                       fi
+                       ## 遇到了错误有
+                       ## 1.testfile 如果不存在会创建的 不用单独判断
+                       ## 2.${testfile} 在使用的时候需要加"" 这才才会是环境变量进行转换
+                       ## 3.if 空格[空格 判断 空格] 忘记加空格
+                    ~~~
+          
                  6. ~~~shell
                     #!/bin/bash
                     read -p "Please input date: " startdate
@@ -881,9 +880,9 @@
                     ## 遇到的问题
                     ## 1.计算公式中的变量 不需要用" " 括起来 这和 [ ] if条件判断不太一样
                     ~~~
-
+          
               9. case .... esac 判断
-
+          
                  1. ~~~shell
                     #!/bin/bash
                     case ${1} in ##参数 in
@@ -896,17 +895,17 @@
                     *)     echo "Use  ${0} {hello}" ##其余都不匹配的时候
                     esac
                     ~~~
-
+          
               10. 利用 function功能
-
+          
                   1. 由于shell 执行的顺序是**从上到下 从左到右** 所以function需要先定义,才能使用.
                   2. function fname(){ 程序段 }
                   3. function中也有内置变量,$0表示function名 $1表示第一个变量,在调用function时候,需要区分是函数的$1,还是执行shell 的第一个参数
-
+          
               11. 循环
-
+          
                   1. while do done,until do done 不定循环
-
+          
                      - ~~~shell
                        #!/bin/bash
                        while [ "${ny}" != "yes" -a "${ny}" != "YES" ]
@@ -918,7 +917,7 @@
                        ## 1.while的[空格 判断条件 空格] 忘记加空格
                        ## 2.[空格 判断条件 空格] 判断条件的 yes 用 " "包含进来. 
                        ~~~
-
+          
                      - ~~~shell
                        #!/bin/bash
                        until [ "${ny}" == "yes" -o "${ny}" == "YES" ]
@@ -928,7 +927,7 @@
                                echo "your input is right!!"
                        
                        ~~~
-
+          
                   2. for...do ..done (固定循环)
                   
                      1. ~~~shell
@@ -948,15 +947,15 @@
                                 echo "the zoo hava animal : ${animal}"
                         done
                         ~~~
-
+          
           18. Linux账号管理
-
+          
               1. 查询账号各参数的意思 略
-
+          
               2. id 命令 查询对应用户的所属分组等信息  id testuser
-
+          
               3. 用户管理
-
+          
                  1. ~~~shell
                     #添加用户
                     ## useradd [-u UID 即用户标识] [-g 初始用户组] [-G 次要用户组 账号还可以加入的用户组] [-s shell 例如nolgin shell]
@@ -967,9 +966,9 @@
                     #删除用户
                     userdel -r testuser  ## 连home目录一起删除.
                     ~~~
-
+          
               4. 用户组管理
-
+          
                  1. ~~~shell
                     #添加用户组
                     ## groupadd [-g gid] [-r 建立系统用户组] 用户组名称 用户组名
@@ -980,13 +979,13 @@
                     #删除用户组
                     groupdel mygroup
                     ~~~
-
+          
           19. 磁盘配额(Quata)与进阶文件系统管理
-
+          
               1. 磁盘配额一般会针对用户,用户组,路径进行限制.
-
+          
               2. 磁盘配额使用限制
-
+          
                  1. 在ETX文件系统中仅能针对整个filesystem.
                  2. 核心必须支持磁盘配额(Quata)
                  3. 只对一般身份使用有效,root是不能够进行限制的,因为它拥有所有资源.
