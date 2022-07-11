@@ -1006,10 +1006,9 @@
                  1. xfs_quota -x -x 相关命令可以创建分区 将更具用户组和用户以及路径设置分区权限等.
               
                  2. LVM 逻辑卷管理器 
-                 <<<<<<< HEAD
-          
+                 
                  3. **磁盘,分区与文件系统:**磁盘的文件一般是/dev/sd[a-p],磁盘又会像window中分C盘,D盘,在linux 中叫做分区,分区的格式有MBR和GPT两种,在分区操作之前,需要格式化成固定的文件系统,因为不同的文件系统权限和属性不同,常见的文件系统格式有ext2,xfs,ntfs,fat等. 传统的磁盘一个分区只能被格式化成一种文件系统.先进的则不同,所以一个可挂载的数据为一个**文件系统**而不是一个文件分区.
-              
+                 
                  4. **文件系统:**文件系统通常将文件属性和权限放在inode中,而数据则分开放在数据区块中.文件系统被分了好多inode.
                  
                  5. **挂载点**:每个文件系统都有独立inode,区块,超级区块等信息,文件系统能够连接到**目录树**,才能被我们使用,**挂载点一定要是目录,改目录进入该文件系统的入口.**
@@ -1021,7 +1020,7 @@
                  8. du 查看文件系统的磁盘使用量.
                  
                  9. 观察磁盘分区的状态
-
+                 
                     1. ~~~shell
                        lsblk ## 列出系统所有的磁盘与磁盘内的分区信息.
                        NAME            MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
@@ -1135,7 +1134,7 @@
                        KiB Mem :   995684 total,    70760 free,   313748 used,   611176 buff/cache
                        KiB Swap:   524284 total,   401148 free,   123136 used.   488896 avail Mem 
                        
-                       PID USER      PR  NI    VIRT    RES    SHR S %CPU %MEM     TIME+ COMMAND                                       
+                       PID USER      PR  NI    VIRT    RES    SHR S %CPU %MEM     TIME+ COMMAND                                      
                        285 root      20   0       0      0      0 S  0.5  0.0   1:58.20 xfsaild/sda3                                  
                          1 root      20   0   51732   3096   2004 S  0.0  0.3   0:42.00 systemd 
                        # PR 优先级 越小越好
