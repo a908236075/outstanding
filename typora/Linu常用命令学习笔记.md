@@ -908,7 +908,7 @@
           
                      - ~~~shell
                        #!/bin/bash
-                       while [ "${ny}" != "yes" -a "${ny}" != "YES" ]
+                       while [ "${ny}" != "yes" -o "${ny}" != "YES" ]
                        do
                                read -p "Please input 'yes' or 'YES' to intterupt running " ny
                        done
