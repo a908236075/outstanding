@@ -123,6 +123,22 @@
       }
       ~~~
 
+## Apache HttpClient Basic Authentication
 
+1. ~~~java
+    @Test
+       void basicAutTest() throws IOException {
+           String urlOverHttps
+                   = "https://www.baidu.com";
+           BasicCredentialsProvider provider = new BasicCredentialsProvider();
+           UsernamePasswordCredentials credentials = new UsernamePasswordCredentials("usr1", "password1");
+           provider.setCredentials(AuthScope.ANY, credentials);
+           CloseableHttpClient client = HttpClientBuilder.create().setDefaultCredentialsProvider(provider).build();
+           CloseableHttpResponse response = client.execute(new HttpGet(urlOverHttps));
+           Assertions.assertEquals(response.getStatusLine().getStatusCode(), HttpStatus.SC_OK);
+       }
+   ~~~
+
+2. 
 
 ​	
