@@ -63,3 +63,260 @@
 5. 在Spring文档中，“factory bean”指的是在Spring容器中配置的bean，它通过实例或静态工厂方法创建对象。相比之下，FactoryBean(注意大写)指的是spring特定的FactoryBean实现类。
 
 6. 控制反转又名依赖注入,原本Bean的实例化需要Bean层层的构建依赖的Bean,现在由容器构建完成,可直接使用Bean."获得依赖对象的过程被反转了",控制被反转之后，获得依赖对象的过程由自身管理变为了由IOC容器主动注入.所谓依赖注入，就是由IOC容器在运行期间，动态地将某种依赖关系注入到对象之中。
+
+7. 依赖注入
+
+   1. 构造方法的注入(静态工厂方法和它类似)
+
+      ~~~xml
+      <beans>
+      <bean id="exampleBean" class="examples.ExampleBean">
+          <!-- constructor injection using the nested ref element -->
+          <constructor-arg>
+              <ref bean="anotherExampleBean"/>
+          </constructor-arg>
+      
+          <!-- constructor injection using the neater ref attribute -->
+          <constructor-arg ref="yetAnotherBean"/>
+      
+          <constructor-arg type="int" value="1"/>
+      </bean>
+      
+      <bean id="anotherExampleBean" class="examples.AnotherBean"/>
+      <bean id="yetAnotherBean" class="examples.YetAnotherBean"/>
+      </beans>
+      
+      <!--属性注入-->
+      <bean id="exampleBean" class="examples.ExampleBean">
+          <constructor-arg name="years" value="7500000"/>
+          <constructor-arg name="ultimateAnswer" value="42"/>
+      </bean>
+      ~~~
+
+      ~~~java
+      public class ExampleBean {
+      
+          // a private constructor
+          private ExampleBean(...) {
+              ...
+          }
+      
+          // a static factory method; the arguments to this method can be
+          // considered the dependencies of the bean that is returned,
+          // regardless of how those arguments are actually used.
+          public static ExampleBean createInstance (
+              AnotherBean anotherBean, YetAnotherBean yetAnotherBean, int i) {
+      
+              ExampleBean eb = new ExampleBean (...);
+              // some other operations...
+              return eb;
+          }
+      }
+      ~~~
+
+      
+
+   2. Set方法注入
+
+      ~~~xml
+      <bean id="exampleBean" class="examples.ExampleBean">
+          <!-- setter injection using the nested ref element -->
+          <property name="beanOne">
+              <ref bean="anotherExampleBean"/>
+          </property>
+      
+          <!-- setter injection using the neater ref attribute -->
+          <property name="beanTwo" ref="yetAnotherBean"/>
+          <property name="integerProperty" value="1"/>
+      </bean>
+      
+      <bean id="anotherExampleBean" class="examples.AnotherBean"/>
+      <bean id="yetAnotherBean" class="examples.YetAnotherBean"/>S
+      ~~~
+
+   3. 怎么选择构造方法注入还是set方法注入?
+
+      1. 构造方法是在创建类的时候就调用,所以一般会将必选的依赖类通过构造方法注入,可选的通过set方法来注入.
+      2. set方式注入可以解决依赖循环的问题.
+
+   4. Spring在构造类的时候只会对类型进行校验,而参数的值是在真正调用类的时候才会赋值.**????**
+
+      1. ~~~java
+         @AllArgsConstructor
+         @NoArgsConstructor
+         @Mapper
+         public class BeanProcessMapper {
+             private String isBetter = "zhagnsan";
+         
+             public String getIsBetter() {
+                 return isBetter;
+             }
+         }
+         
+         AnnotationConfigApplicationContext annotationConfigApplicationContext = new AnnotationConfigApplicationContext(BeanProcessMapper.class);
+                 ConfigurableListableBeanFactory beanFactory = annotationConfigApplicationContext.getBeanFactory();
+                 BeanProcessMapper beanProcessMapper = annotationConfigApplicationContext.getBean("beanProcessMapper", BeanProcessMapper.class);
+                 System.out.println(beanProcessMapper.getIsBetter());
+         ~~~
+
+      2. 实际情况并非如此 ,在我未调用时候,发现在BeanFactory中 BeanProcessMapper的name值已经静静的躺在那里了.
+
+         ![](.\picture\springFramework\类参数赋值.png)
+
+   5. 属性绑定
+
+      1. ~~~xml
+         <bean id="theTargetBean" class="..."/>
+         
+         <bean id="theClientBean" class="...">
+             <property name="targetName">
+                 <idref bean="theTargetBean"/>
+             </property>
+         </bean>
+         <!--等价于-->
+         <bean id="theTargetBean" class="..." />
+         
+         <bean id="client" class="...">
+             <property name="targetName" value="theTargetBean"/>
+         </bean>
+         ~~~
+
+      2. ~~~xml
+         
+         <!--collection赋值-->
+         <bean id="moreComplexObject" class="example.ComplexObject">
+             <!-- results in a setAdminEmails(java.util.Properties) call -->
+             <property name="adminEmails">
+                 <props>
+                     <prop key="administrator">administrator@example.org</prop>
+                     <prop key="support">support@example.org</prop>
+                     <prop key="development">development@example.org</prop>
+                 </props>
+             </property>
+             <!-- results in a setSomeList(java.util.List) call -->
+             <property name="someList">
+                 <list>
+                     <value>a list element followed by a reference</value>
+                     <ref bean="myDataSource" />
+                 </list>
+             </property>
+             <!-- results in a setSomeMap(java.util.Map) call -->
+             <property name="someMap">
+                 <map>
+                     <entry key="an entry" value="just some string"/>
+                     <entry key="a ref" value-ref="myDataSource"/>
+                 </map>
+             </property>
+             <!-- results in a setSomeSet(java.util.Set) call -->
+             <property name="someSet">
+                 <set>
+                     <value>just some string</value>
+                     <ref bean="myDataSource" />
+                 </set>
+             </property>
+         </bean>
+         
+         <!--通过继承属性将Collection合并-->
+         
+         
+         <beans>
+             <bean id="parent" abstract="true" class="example.ComplexObject">
+                 <property name="adminEmails">
+                     <props>
+                         <prop key="administrator">administrator@example.com</prop>
+                         <prop key="support">support@example.com</prop>
+                     </props>
+                 </property>
+             </bean>
+             <bean id="child" parent="parent">
+                 <property name="adminEmails">
+                     <!-- the merge is specified on the child collection definition -->
+                     <props merge="true">
+                         <prop key="sales">sales@example.com</prop>
+                         <prop key="support">support@example.co.uk</prop>
+                     </props>
+                 </property>
+             </bean>
+         <beans>
+         
+         ~~~
+
+      3. ~~~xml
+         <beans xmlns="http://www.springframework.org/schema/beans"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:p="http://www.springframework.org/schema/p"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans
+                 https://www.springframework.org/schema/beans/spring-beans.xsd">
+         	<!--p-namespace可以简化属性赋值,他们是等价的,一般用于set方法-->
+             <bean name="john-classic" class="com.example.Person">
+                 <property name="name" value="John Doe"/>
+                 <property name="spouse" ref="jane"/>
+             </bean>
+         
+             <bean name="john-modern"
+                 class="com.example.Person"
+                 p:name="John Doe"
+                 p:spouse-ref="jane"/>
+         
+             <bean name="jane" class="com.example.Person">
+                 <property name="name" value="Jane Doe"/>
+             </bean>
+         </beans>
+         
+         
+         <!--c-namespace简化构造方法的属性赋值-->
+         <beans xmlns="http://www.springframework.org/schema/beans"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xmlns:c="http://www.springframework.org/schema/c"
+             xsi:schemaLocation="http://www.springframework.org/schema/beans
+                 https://www.springframework.org/schema/beans/spring-beans.xsd">
+         
+             <bean id="beanTwo" class="x.y.ThingTwo"/>
+             <bean id="beanThree" class="x.y.ThingThree"/>
+         
+             <!-- traditional declaration with optional argument names -->
+             <bean id="beanOne" class="x.y.ThingOne">
+                 <constructor-arg name="thingTwo" ref="beanTwo"/>
+                 <constructor-arg name="thingThree" ref="beanThree"/>
+                 <constructor-arg name="email" value="something@somewhere.com"/>
+             </bean>
+         
+             <!-- c-namespace declaration with argument names -->
+             <bean id="beanOne" class="x.y.ThingOne" c:thingTwo-ref="beanTwo"
+                 c:thingThree-ref="beanThree" c:email="something@somewhere.com"/>
+         
+         </beans>
+         
+         
+         ~~~
+
+      4. ~~~xml
+         <!--复合参数的赋值-->
+         <bean id="something" class="things.ThingOne">
+             <property name="fred.bob.sammy" value="123" />
+         </bean>
+         ~~~
+
+      5. 当依赖关系并不十分直接的时候可以用depend-on属性,多依赖.
+
+         ~~~xml
+         
+         
+         <bean id="beanOne" class="ExampleBean" depends-on="manager,accountDao">
+             <property name="manager" ref="manager" />
+         </bean>
+         
+         <bean id="manager" class="ManagerBean" />
+         <bean id="accountDao" class="x.y.jdbc.JdbcAccountDao" />
+         
+         ~~~
+
+      6. 定义一个懒加载的类,Application容器启动,不会创建懒加载的类,除非有非懒加载的类依赖它.
+
+         ~~~xml
+         <bean id="lazy" class="com.something.ExpensiveToCreateBean" lazy-init="true"/>
+         <bean name="not.lazy" class="com.something.AnotherBean"/>
+         ~~~
+
+         
+
