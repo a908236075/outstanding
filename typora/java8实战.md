@@ -340,7 +340,36 @@
 2. 默认方法使用**default**关键字.
 3. **并发与并行**这两种算法的差异。并发是一种编程属性（重叠地执行），即使在单核的机器上也可以执行，而并行是执行硬件的属性（同时执行）。
 
+---
 
+## 实践加学习总结
+
+1. Stream 与  File
+
+   1. ~~~java
+      Path path = Paths.get("C:\\file.txt");
+      Stream<String> streamOfStrings = Files.lines(path);
+      Stream<String> streamWithCharset = 
+        Files.lines(path, Charset.forName("UTF-8"));
+      ~~~
+
+2. Steam 顺序执行 所以我们最后优先调用skip 这种能够缩小计算规模的步骤.
+
+   1. ~~~java
+      // 正确的调用
+      long size = list.stream().skip(2).map(element -> {
+          wasCalled();
+          return element.substring(0, 3);
+      }).count();
+      // 错误的调用
+      long size = list.stream().map(element -> {
+          wasCalled();
+          return element.substring(0, 3);
+      }).skip(2).count();
+      
+      ~~~
+
+3. 
 
 
 
