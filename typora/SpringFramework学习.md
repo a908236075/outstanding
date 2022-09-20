@@ -1,174 +1,187 @@
-### 1. IOC容器
+# 1. IOC容器
 
-### 1.1Bean的定义
+## Bean的定义
 
-1. Bean是程序的骨架,Spring IOC 管理着这些Bean,Bean的层级关系反映到容器使用的配置元数据中.
+### 什么是Bean
 
-2. org.springframework.beans 和 org.springframework.context 是 Spring IOC 的基础.
+​	Bean是程序的骨架,Spring IOC 管理着这些Bean,Bean的层级关系反映到容器使用的配置元数据中.
 
-3. 需要通过注解或者xml的形式定义Bean,定义的类与容器真正使用的类相对应.类可以相互依赖.
+### Spring IOC 的基础
 
-   1. ~~~xml
-      <?xml version="1.0" encoding="UTF-8"?>
-      <beans xmlns="http://www.springframework.org/schema/beans"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://www.springframework.org/schema/beans
-              https://www.springframework.org/schema/beans/spring-beans.xsd">
-      	<!-- 对于复杂的定义可以使用import --> 
-          <!-- service.xml必须是在同一个文件下-->
-           <import resource="services.xml"/>
-          <import resource="resources/messageSource.xml"/>
-          <import resource="/resources/themeSource.xml"/>
-      
-          <bean id="..." class="...">  
-              <!-- collaborators and configuration for this bean go here -->
-          </bean>
-      
-          <bean id="..." class="...">
-              <!-- collaborators and configuration for this bean go here -->
-          </bean>
-           <!-- services 类可以相互依赖 -->
-          <bean id="petStore" class="org.springframework.samples.jpetstore.services.PetStoreServiceImpl">
-              <property name="accountDao" ref="accountDao"/>
-              <property name="itemDao" ref="itemDao"/>
-              <!-- additional collaborators and configuration for this bean go here -->
-          </bean>
-          
-          <bean id="accountDao"
-              class="org.springframework.samples.jpetstore.dao.jpa.JpaAccountDao">
-              <!-- additional collaborators and configuration for this bean go here -->
-          </bean>
-          
-          <bean id="itemDao" class="org.springframework.samples.jpetstore.dao.jpa.JpaItemDao">
-              <!-- additional collaborators and configuration for this bean go here -->
-          </bean>
-          
-      
-          <!-- more bean definitions go here -->
-      
-      </beans>
-      ~~~
+​	org.springframework.beans 和 org.springframework.context 是 Spring IOC 的基础.
 
-4. 定义后可以通过ClassPathXmlApplicationContext获取到
+### 定义Bean的形式
 
-   1. ~~~java
-      // create and configure beans
-      ApplicationContext context = new ClassPathXmlApplicationContext("services.xml", "daos.xml");
-      
-      // retrieve configured instance
-      PetStoreService service = context.getBean("petStore", PetStoreService.class);
-      
-      // use configured instance
-      List<String> userList = service.getUsernameList();
-      ~~~
+1. 需要通过注解或者xml的形式定义Bean,定义的类与容器真正使用的类相对应.类可以相互依赖.
 
-5. 在Spring文档中，“factory bean”指的是在Spring容器中配置的bean，它通过实例或静态工厂方法创建对象。相比之下，FactoryBean(注意大写)指的是spring特定的FactoryBean实现类。
+2. ~~~xml
+   <?xml version="1.0" encoding="UTF-8"?>
+   <beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd">
+   	<!-- 对于复杂的定义可以使用import --> 
+       <!-- service.xml必须是在同一个文件下-->
+        <import resource="services.xml"/>
+       <import resource="resources/messageSource.xml"/>
+       <import resource="/resources/themeSource.xml"/>
+   
+       <bean id="..." class="...">  
+           <!-- collaborators and configuration for this bean go here -->
+       </bean>
+   
+       <bean id="..." class="...">
+           <!-- collaborators and configuration for this bean go here -->
+       </bean>
+        <!-- services 类可以相互依赖 -->
+       <bean id="petStore" class="org.springframework.samples.jpetstore.services.PetStoreServiceImpl">
+           <property name="accountDao" ref="accountDao"/>
+           <property name="itemDao" ref="itemDao"/>
+           <!-- additional collaborators and configuration for this bean go here -->
+       </bean>
+       
+       <bean id="accountDao"
+           class="org.springframework.samples.jpetstore.dao.jpa.JpaAccountDao">
+           <!-- additional collaborators and configuration for this bean go here -->
+       </bean>
+       
+       <bean id="itemDao" class="org.springframework.samples.jpetstore.dao.jpa.JpaItemDao">
+           <!-- additional collaborators and configuration for this bean go here -->
+       </bean>
+       
+   
+       <!-- more bean definitions go here -->
+   
+   </beans>
+   ~~~
 
-### 1.2控制反转
+### ClassPathXmlApplicationContext
 
-1. 控制反转又名依赖注入,原本Bean的实例化需要Bean层层的构建依赖的Bean,现在由容器构建完成,可直接使用Bean."获得依赖对象的过程被反转了",控制被反转之后，获得依赖对象的过程由自身管理变为了由IOC容器主动注入.所谓依赖注入，就是由IOC容器在运行期间，动态地将某种依赖关系注入到对象之中。
+1. 定义后可以通过ClassPathXmlApplicationContext获取到
 
-2. 依赖注入
+2. ~~~java
+   // create and configure beans
+   ApplicationContext context = new ClassPathXmlApplicationContext("services.xml", "daos.xml");
+   
+   // retrieve configured instance
+   PetStoreService service = context.getBean("petStore", PetStoreService.class);
+   
+   // use configured instance
+   List<String> userList = service.getUsernameList();
+   ~~~
 
-   1. 构造方法的注入(静态工厂方法和它类似)
+### FactoryBean与BeanFactory
 
-      ~~~xml
-      <beans>
-      <bean id="exampleBean" class="examples.ExampleBean">
-          <!-- constructor injection using the nested ref element -->
-          <constructor-arg>
-              <ref bean="anotherExampleBean"/>
-          </constructor-arg>
-      
-          <!-- constructor injection using the neater ref attribute -->
-          <constructor-arg ref="yetAnotherBean"/>
-      
-          <constructor-arg type="int" value="1"/>
-      </bean>
-      
-      <bean id="anotherExampleBean" class="examples.AnotherBean"/>
-      <bean id="yetAnotherBean" class="examples.YetAnotherBean"/>
-      </beans>
-      
-      <!--属性注入-->
-      <bean id="exampleBean" class="examples.ExampleBean">
-          <constructor-arg name="years" value="7500000"/>
-          <constructor-arg name="ultimateAnswer" value="42"/>
-      </bean>
-      ~~~
+​	在Spring文档中，“factory bean”指的是在Spring容器中配置的bean，它通过实例或静态工厂方法创建对象。相比之下，FactoryBean(注意大写)指的是spring特定的FactoryBean实现类。
 
-      ~~~java
-      public class ExampleBean {
-      
-          // a private constructor
-          private ExampleBean(...) {
-              ...
-          }
-      
-          // a static factory method; the arguments to this method can be
-          // considered the dependencies of the bean that is returned,
-          // regardless of how those arguments are actually used.
-          public static ExampleBean createInstance (
-              AnotherBean anotherBean, YetAnotherBean yetAnotherBean, int i) {
-      
-              ExampleBean eb = new ExampleBean (...);
-              // some other operations...
-              return eb;
-          }
-      }
-      ~~~
+## 控制反转
 
-      
+### 定义:
 
-   2. Set方法注入
+​	控制反转又名依赖注入,原本Bean的实例化需要Bean层层的构建依赖的Bean,现在由容器构建完成,可直接使用Bean."获得依赖对象的过程被反转了",控制被反转之后，获得依赖对象的过程由自身管理变为了由IOC容器主动注入.所谓依赖注入，就是由IOC容器在运行期间，动态地将某种依赖关系注入到对象之中。
 
-      ~~~xml
-      <bean id="exampleBean" class="examples.ExampleBean">
-          <!-- setter injection using the nested ref element -->
-          <property name="beanOne">
-              <ref bean="anotherExampleBean"/>
-          </property>
-      
-          <!-- setter injection using the neater ref attribute -->
-          <property name="beanTwo" ref="yetAnotherBean"/>
-          <property name="integerProperty" value="1"/>
-      </bean>
-      
-      <bean id="anotherExampleBean" class="examples.AnotherBean"/>
-      <bean id="yetAnotherBean" class="examples.YetAnotherBean"/>S
-      ~~~
+### 依赖注入实现
 
-   3. 怎么选择构造方法注入还是set方法注入?
+#### 构造方法的注入(静态工厂方法和它类似)
 
-      1. 构造方法是在创建类的时候就调用,所以一般会将必选的依赖类通过构造方法注入,可选的通过set方法来注入.
-      2. set方式注入可以解决依赖循环的问题.
+~~~xml
+<beans>
+<bean id="exampleBean" class="examples.ExampleBean">
+    <!-- constructor injection using the nested ref element -->
+    <constructor-arg>
+        <ref bean="anotherExampleBean"/>
+    </constructor-arg>
 
-   4. Spring在构造类的时候只会对类型进行校验,而参数的值是在真正调用类的时候才会赋值.**????**
+    <!-- constructor injection using the neater ref attribute -->
+    <constructor-arg ref="yetAnotherBean"/>
 
-      1. ~~~java
-         @AllArgsConstructor
-         @NoArgsConstructor
-         @Mapper
-         public class BeanProcessMapper {
-             private String isBetter = "zhagnsan";
-         
-             public String getIsBetter() {
-                 return isBetter;
-             }
-         }
-         
-         AnnotationConfigApplicationContext annotationConfigApplicationContext = new AnnotationConfigApplicationContext(BeanProcessMapper.class);
-                 ConfigurableListableBeanFactory beanFactory = annotationConfigApplicationContext.getBeanFactory();
-                 BeanProcessMapper beanProcessMapper = annotationConfigApplicationContext.getBean("beanProcessMapper", BeanProcessMapper.class);
-                 System.out.println(beanProcessMapper.getIsBetter());
-         ~~~
+    <constructor-arg type="int" value="1"/>
+</bean>
 
-      2. 实际情况并非如此 ,在我未调用时候,发现在BeanFactory中 BeanProcessMapper的name值已经静静的躺在那里了.
+<bean id="anotherExampleBean" class="examples.AnotherBean"/>
+<bean id="yetAnotherBean" class="examples.YetAnotherBean"/>
+</beans>
 
-         ![](.\picture\springFramework\类参数赋值.png)
+<!--属性注入-->
+<bean id="exampleBean" class="examples.ExampleBean">
+    <constructor-arg name="years" value="7500000"/>
+    <constructor-arg name="ultimateAnswer" value="42"/>
+</bean>
+~~~
+
+~~~java
+public class ExampleBean {
+
+    // a private constructor
+    private ExampleBean(...) {
+        ...
+    }
+
+    // a static factory method; the arguments to this method can be
+    // considered the dependencies of the bean that is returned,
+    // regardless of how those arguments are actually used.
+    public static ExampleBean createInstance (
+        AnotherBean anotherBean, YetAnotherBean yetAnotherBean, int i) {
+
+        ExampleBean eb = new ExampleBean (...);
+        // some other operations...
+        return eb;
+    }
+}
+~~~
 
 
-### 1.3属性绑定
+
+#### Set方法注入
+
+~~~xml
+<bean id="exampleBean" class="examples.ExampleBean">
+    <!-- setter injection using the nested ref element -->
+    <property name="beanOne">
+        <ref bean="anotherExampleBean"/>
+    </property>
+
+    <!-- setter injection using the neater ref attribute -->
+    <property name="beanTwo" ref="yetAnotherBean"/>
+    <property name="integerProperty" value="1"/>
+</bean>
+
+<bean id="anotherExampleBean" class="examples.AnotherBean"/>
+<bean id="yetAnotherBean" class="examples.YetAnotherBean"/>S
+~~~
+
+### 构造方法还是set方法注入如何选?
+
+1. 构造方法是在创建类的时候就调用,所以一般会将必选的依赖类通过构造方法注入,可选的通过set方法来注入.
+2. set方式注入可以解决依赖循环的问题.
+
+### 参数赋值的时机
+
+1. Spring在构造类的时候只会对类型进行校验,而参数的值是在真正调用类的时候才会赋值.**????**
+
+2. ~~~java
+   @AllArgsConstructor
+   @NoArgsConstructor
+   @Mapper
+   public class BeanProcessMapper {
+       private String isBetter = "zhagnsan";
+   
+       public String getIsBetter() {
+           return isBetter;
+       }
+   }
+   
+   AnnotationConfigApplicationContext annotationConfigApplicationContext = new AnnotationConfigApplicationContext(BeanProcessMapper.class);
+           ConfigurableListableBeanFactory beanFactory = annotationConfigApplicationContext.getBeanFactory();
+           BeanProcessMapper beanProcessMapper = annotationConfigApplicationContext.getBean("beanProcessMapper", BeanProcessMapper.class);
+           System.out.println(beanProcessMapper.getIsBetter());
+   ~~~
+
+3. 实际情况并非如此 ,在我未调用时候,发现在BeanFactory中 BeanProcessMapper的name值已经静静的躺在那里了.
+
+   ![](.\picture\springFramework\类参数赋值.png)
+
+## 属性绑定
 
 1. ~~~xml
    <bean id="theTargetBean" class="..."/>
@@ -366,22 +379,42 @@
          4. 方法注入还用在当单例对象依赖多例对象,每次想获取到不同的多例对象时候.
       3. @LookUp 检验使用的类是否和配置xml定义的类一致.
 
-### 1.4Bean的生命周期.
+## Bean的生命周期
 
-1. 单例bean中有多例bean的依赖,实例化Bean只发生一次,所以依赖的多例Bean是同一个对象.因为多例的含义是，我们每次向Spring容器请求多例bean，都会创建一个新的对象返回。而B虽然是多例，但是我们是通过A访问B，并不是通过容器访问，所以拿到的永远是同一个B.
+### 单例bean中有多例bean的依赖
 
-2. 生命周期除了单例,多例之外,还有request,session,application,websocket,如果这些生命周期应用在web的请求中,需要spring配置Listener或者其他的监听器.
+- 实例化Bean只发生一次,所以依赖的多例Bean是同一个对象.因为多例的含义是，我们每次向Spring容器请求多例bean，都会创建一个新的对象返回。而B虽然是多例，但是我们是通过A访问B，并不是通过容器访问，所以拿到的永远是同一个B.
 
-   ```xml
-   <web-app>
-       ...
-       <listener>
-           <listener-class>
-               org.springframework.web.context.request.RequestContextListener
-           </listener-class>
-       </listener>
-       ...
-   </web-app>
-   ```
+### 其它的生命周期
 
-3. 
+- 生命周期除了单例,多例之外,还有request,session,application,websocket,如果这些生命周期应用在web的请求中,需要spring配置Listener或者其他的监听器.
+
+```xml
+<web-app>
+    ...
+    <listener>
+        <listener-class>
+            org.springframework.web.context.request.RequestContextListener
+        </listener-class>
+    </listener>
+    ...
+</web-app>
+```
+
+### 定义类的生命周期:
+
+​	可以使用@RequestScope,@SessionScope,@ApplicationScope进行定义,也可以使用xml
+
+1. ~~~java
+   @RequestScope
+   @Component
+   public class AppPreferences {
+       // ...
+   }
+   ~~~
+
+2. ~~~xml
+   <bean id="loginAction" class="com.something.LoginAction" scope="request"/>
+   ~~~
+
+### Scope类作为依赖:
