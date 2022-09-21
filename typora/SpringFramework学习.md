@@ -418,3 +418,89 @@ public class ExampleBean {
    ~~~
 
 ### Scope类作为依赖:
+
+1. @RequestScope,@SessionScope,@ApplicationScope这些web生命周期作为**依赖**的时候,需要生命Aop代理,这要每次依赖注入的类都是一个代理,如果没有生命,以为类的容器初始化仅在启动的时候执行,所以,每次取到的依赖都是相同的原始的定义的类.
+
+2. ~~~xml
+   ?xml version="1.0" encoding="UTF-8"?>
+   <beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/aop
+           https://www.springframework.org/schema/aop/spring-aop.xsd">
+   
+       <!-- an HTTP Session-scoped bean exposed as a proxy -->
+       <bean id="userPreferences" class="com.something.UserPreferences" scope="session">
+           <!-- instructs the container to proxy the surrounding bean -->
+           <aop:scoped-proxy/> 
+       </bean>
+   
+       <!-- a singleton-scoped bean injected with a proxy to the above bean -->
+       <bean id="userService" class="com.something.SimpleUserService">
+           <!-- a reference to the proxied userPreferences bean -->
+           <property name="userPreferences" ref="userPreferences"/>
+       </bean>
+   </beans>
+   ~~~
+
+## 定义Bean的性质
+
+### 生命周期的回调
+
+1. 通过实现**InitializingBean**接口,重写afterPropertiesSet方法以及实现**DisposableBean**接口 ,重写destroy方法 .
+
+2. ~~~java
+   public class AnotherExampleBean implements InitializingBean {
+   
+       @Override
+       public void afterPropertiesSet() {
+           // do some initialization work
+       }
+   }
+   public class AnotherExampleBean implements DisposableBean {
+   
+       @Override
+       public void destroy() {
+           // do some destruction work (like releasing pooled connections)
+       }
+   }
+   ~~~
+
+3. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
