@@ -433,7 +433,7 @@
    13. du:评估文件系统的磁盘使用量.
 
        1. du 显示文件的容量  单位是KB.
-       
+
    14. 创建目录快捷方式: ln -s  pwsswd-so 如果加-s就是symbol link.否则就是hard link.
 
    15. 磁盘分区
@@ -578,7 +578,7 @@
           13. :1,$s/word1/word2/gc 从第一列到最后一列寻找并替换.并一个一个单词的comfirem
           14. :sp 在打开的文档中输入:sp 打开多窗口. Ctrl+W+↑或者↓ 切换窗口.Ctrl+W+q 全部离开.
           15. set nu set nonu  设置行号 或者取消行号.
-          
+
        9. 认识与学习bash
 
           1. type 命令 可以查看是否是内容的bash命令.例如 type cd
@@ -843,11 +843,11 @@
                             echo "please input hello"
                     fi
                     ~~~
-          
+
                  3. test 一般是命令输入的形式 [ -z "${1}" ] 等价于 test -z "${1}",可以把[ ] 看做是test
-          
+
                  4. netstat -tuln 可以查看目前系统开放了哪些端口,0.0.0.0 是面向网络的.
-          
+
                  5. ~~~shell
                        #!/bin/bash
                        echo -e "The ftp,ssh will be detect!!"
@@ -862,7 +862,7 @@
                        ## 2.${testfile} 在使用的时候需要加"" 这才才会是环境变量进行转换
                        ## 3.if 空格[空格 判断 空格] 忘记加空格
                     ~~~
-          
+
                  6. ~~~shell
                     #!/bin/bash
                     read -p "Please input date: " startdate
@@ -880,9 +880,9 @@
                     ## 遇到的问题
                     ## 1.计算公式中的变量 不需要用" " 括起来 这和 [ ] if条件判断不太一样
                     ~~~
-          
+
               9. case .... esac 判断
-          
+
                  1. ~~~shell
                     #!/bin/bash
                     case ${1} in ##参数 in
@@ -895,17 +895,17 @@
                     *)     echo "Use  ${0} {hello}" ##其余都不匹配的时候
                     esac
                     ~~~
-          
+
               10. 利用 function功能
-          
+
                   1. 由于shell 执行的顺序是**从上到下 从左到右** 所以function需要先定义,才能使用.
                   2. function fname(){ 程序段 }
                   3. function中也有内置变量,$0表示function名 $1表示第一个变量,在调用function时候,需要区分是函数的$1,还是执行shell 的第一个参数
-          
+
               11. 循环
-          
+
                   1. while do done,until do done 不定循环
-          
+
                      - ~~~shell
                        #!/bin/bash
                        while [ "${ny}" != "yes" -o "${ny}" != "YES" ]
@@ -917,7 +917,7 @@
                        ## 1.while的[空格 判断条件 空格] 忘记加空格
                        ## 2.[空格 判断条件 空格] 判断条件的 yes 用 " "包含进来. 
                        ~~~
-          
+
                      - ~~~shell
                        #!/bin/bash
                        until [ "${ny}" == "yes" -o "${ny}" == "YES" ]
@@ -927,7 +927,7 @@
                                echo "your input is right!!"
                        
                        ~~~
-          
+
                   2. for...do ..done (固定循环)
                   
                      1. ~~~shell
@@ -947,15 +947,15 @@
                                 echo "the zoo hava animal : ${animal}"
                         done
                         ~~~
-          
+
           18. Linux账号管理
-          
+
               1. 查询账号各参数的意思 略
-          
+
               2. id 命令 查询对应用户的所属分组等信息  id testuser
-          
+
               3. 用户管理
-          
+
                  1. ~~~shell
                     #添加用户
                     ## useradd [-u UID 即用户标识] [-g 初始用户组] [-G 次要用户组 账号还可以加入的用户组] [-s shell 例如nolgin shell]
@@ -966,9 +966,9 @@
                     #删除用户
                     userdel -r testuser  ## 连home目录一起删除.
                     ~~~
-          
+
               4. 用户组管理
-          
+
                  1. ~~~shell
                     #添加用户组
                     ## groupadd [-g gid] [-r 建立系统用户组] 用户组名称 用户组名
@@ -979,31 +979,31 @@
                     #删除用户组
                     groupdel mygroup
                     ~~~
-          
+
           19. 磁盘配额(Quata)与进阶文件系统管理
-          
+
               1. 磁盘配额一般会针对用户,用户组,路径进行限制.
-          
+
               2. 磁盘配额使用限制
-          
+
                  1. 在ETX文件系统中仅能针对整个filesystem.
                  2. 核心必须支持磁盘配额(Quata)
                  3. 只对一般身份使用有效,root是不能够进行限制的,因为它拥有所有资源.
                  4. 若启用了SELinux,非所有目录均可设定quata,SELinux 防止用户误操作磁盘,如果想设置需要先关闭它.
-              
+
               3. 实战操作
-              
+
                  1. ~~~shell
                     ## 查看文件系统类型 是xfs还是etx
                     [root@bogon ~]# df -hT /home/
                     文件系统       类型  容量  已用  可用 已用% 挂载点
                     /dev/sda3      xfs    20G  4.8G   15G   25% /
                     ~~~
-              
+
               4. 磁盘配额的应用与实践
-              
+
                  1. xfs_quota -x -x 相关命令可以创建分区 将更具用户组和用户以及路径设置分区权限等.
-              
+
                  2. LVM 逻辑卷管理器 
                  
                  3. **磁盘,分区与文件系统:**磁盘的文件一般是/dev/sd[a-p],磁盘又会像window中分C盘,D盘,在linux 中叫做分区,分区的格式有MBR和GPT两种,在分区操作之前,需要格式化成固定的文件系统,因为不同的文件系统权限和属性不同,常见的文件系统格式有ext2,xfs,ntfs,fat等. 传统的磁盘一个分区只能被格式化成一种文件系统.先进的则不同,所以一个可挂载的数据为一个**文件系统**而不是一个文件分区.
@@ -1050,168 +1050,168 @@
                        ## 非常重要
                        ## Partition Table: msdos msdos 分区格式是MBR,用fdisk命令,gpt分区格式是GPT,用gdisk命令!!!
                        ~~~
-              
-           20. 进程管理与SELiuux 初探
-          
-               1. 进程ID:系统只认识二进制文件,每一次执行任务都会触发/bin/bash这个二进制文件去执行任务,根据UID/GID生成PID,用来标识进程.
-          
-                2. **程序**是二进制文件,一般存放在磁盘中,**进程**是将程序的代码和所需要的数据加载到内存中,并生成PID,是正在运行的程序.
-          
-                3. 一般的命令例如touch 执行后就会结束进程,但是向crontab有关的要一直查看是否任务需要执行,一直要占用进程,常驻在内存当中这种称为**服务**(deamon);
-          
-                4. 后台执行 在命令后面加一个&  使其在后台执行.
-          
+
+          20. 进程管理与SELiuux 初探
+
+              1. 进程ID:系统只认识二进制文件,每一次执行任务都会触发/bin/bash这个二进制文件去执行任务,根据UID/GID生成PID,用来标识进程.
+
+               2. **程序**是二进制文件,一般存放在磁盘中,**进程**是将程序的代码和所需要的数据加载到内存中,并生成PID,是正在运行的程序.
+
+               3. 一般的命令例如touch 执行后就会结束进程,但是向crontab有关的要一直查看是否任务需要执行,一直要占用进程,常驻在内存当中这种称为**服务**(deamon);
+
+               4. 后台执行 在命令后面加一个&  使其在后台执行.
+
+                  1. ~~~shell
+                     tar -zpcf /tmp/1.gz /etc/ &
+                     ~~~
+
+               5. 把当前工作丢入背景中: Ctrl + Z  
+
+               6. jobs 查看丢入背景中工作,+代表最近被放入到背景 的工作号码,-代表第二个.
+
+                  1. ~~~shell
+                     [root@bogon bin]# jobs -l
+                     [1]-   305 停止                  vi hello.sh
+                     [2]+  3102 停止                  vi hello-2.sh
+                     ~~~
+
+                  2. ~~~shell
+                     fg %1  ## 取第一个放入背景中的job
+                     ~~~
+
+                  3. ~~~shell
+                     [root@bogon bin]# jobs
+                     [2]+  已停止               vi hello-2.sh
+                     [root@bogon bin]# kill -9 %2; jobs    ### 杀死后台中的工作
+                     [2]+  已停止               vi hello-2.sh
+                     ~~~
+
+               7. nohup 命令可以是任务在脱机的情况下依然执行.
+
+               8. ps -l  仅观察自己的bash相关进程.
+
+                  1. ~~~shell
+                     [root@bogon bin]# ps -l
+                     F S   UID    PID   PPID  C PRI NI ADDR SZ WCHAN        TTY      TIME     CMD
+                     0 R     0   4730 128757  0  80    0 - 38329 -          pts/2    00:00:00 ps
+                     4 S     0 126134 126114  0  80    0 - 28970 do_wai     pts/2    00:00:00 bash
+                     4 S     0 128757 126134  0  80    0 - 28970 do_wai     pts/2    00:00:00 bash
+                     # F 进程旗标 说明进程的总结权限 4 为root 权限.
+                     # S 代表进程的状态   R(Running) S(Sleep) Z 僵尸进程.
+                     # PRI/NI CUP所执行的优先级 越小越优先.
+                     # ADDR SZ WCHAN 都与内存有关
+                     # TTY 登入者的终端位置 
+                     # TIME 耗费CUP的时间
+                     # CMD 命令
+                     ~~~
+
+               9. ps  aux 显示系统所有的进程
+
+                  1. ~~~shell
+                     root@bogon bin]# ps aux
+                     USER        PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+                     root          1  0.0  0.3  51732  3096 ?        Ss   6月27   0:41 /usr/lib/systemd/systemd --switched-root --syste
+                     root          2  0.0  0.0      0     0 ?        S    6月27   0:00 [kthreadd]
+                     # STAT 状态 
+                     # COMMAND 命令
+                     root@bogon bin]# ps axjf   树形结构显示进程  
+                     PPID    PID   PGID    SID TTY          TPGID STAT   UID   TIME COMMAND
+                          1    849    849    849 ?            -1 Ss       0   0:00 /usr/sbin/sshd -D
+                        849 126114 126114 126114 ?            -1 Ss       0   0:00  \_ sshd: root@pts/2
+                     126114 126134 126134 126134 pts/2      5447 Ss       0   0:00      \_ -bash
+                     126134 128757 128757 126134 pts/2      5447 S        0   0:00          \_ bash
+                     128757   5447   5447 126134 pts/2      5447 R+       0   0:00              \_ ps axjf
+                     ~~~
+
+               10. top命令
+
                    1. ~~~shell
-                      tar -zpcf /tmp/1.gz /etc/ &
+                      top -d 2 ## 每两秒更新一次top,观察整体的信息.
+                      top - 17:39:51 up 3 days, 17:06,  2 users,  load average: 0.03, 0.04, 0.05
+                      Tasks: 106 total,   2 running, 104 sleeping,   0 stopped,   0 zombie
+                      %Cpu(s):   0.0/0.0     0[                                                                                        ]
+                      KiB Mem :   995684 total,    70760 free,   313748 used,   611176 buff/cache
+                      KiB Swap:   524284 total,   401148 free,   123136 used.   488896 avail Mem 
+                      
+                      PID USER      PR  NI    VIRT    RES    SHR S %CPU %MEM     TIME+ COMMAND                                      
+                      285 root      20   0       0      0      0 S  0.5  0.0   1:58.20 xfsaild/sda3                                  
+                        1 root      20   0   51732   3096   2004 S  0.0  0.3   0:42.00 systemd 
+                      # PR 优先级 越小越好
+                      # TIME+ 累计占用cpu 的时间.
                       ~~~
-          
-                5. 把当前工作丢入背景中: Ctrl + Z  
-          
-                6. jobs 查看丢入背景中工作,+代表最近被放入到背景 的工作号码,-代表第二个.
-          
-                   1. ~~~shell
-                      [root@bogon bin]# jobs -l
-                      [1]-   305 停止                  vi hello.sh
-                      [2]+  3102 停止                  vi hello-2.sh
-                      ~~~
-          
-                   2. ~~~shell
-                      fg %1  ## 取第一个放入背景中的job
-                      ~~~
-          
+
+                   2. top命令执行的时候 按M可以切换为按照内存进行排序.
+
                    3. ~~~shell
-                      [root@bogon bin]# jobs
-                      [2]+  已停止               vi hello-2.sh
-                      [root@bogon bin]# kill -9 %2; jobs    ### 杀死后台中的工作
-                      [2]+  已停止               vi hello-2.sh
+                      [root@bogon bin] echo $$   打印当前bash的pid
+                      128757
+                      [root@bogon bin] top -d 2 -p 128757  ## 只观察当前bash进程
+                      top - 17:56:13 up 3 days, 17:23,  2 users,  load average: 0.01, 0.02, 0.05
+                      Tasks:   1 total,   0 running,   1 sleeping,   0 stopped,   0 zombie
+                      %Cpu(s):  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+                      KiB Mem :   995684 total,    70884 free,   313624 used,   611176 buff/cache
+                      KiB Swap:   524284 total,   401148 free,   123136 used.   489020 avail Mem 
+                      
+                         PID USER      PR  NI    VIRT    RES    SHR S %CPU %MEM     TIME+ COMMAND                                       
+                      128757 root      20   0  115880   2360   1792 S  0.0  0.2   0:00.04 bash  
                       ~~~
-          
-                7. nohup 命令可以是任务在脱机的情况下依然执行.
-          
-                8. ps -l  仅观察自己的bash相关进程.
-          
-                   1. ~~~shell
-                      [root@bogon bin]# ps -l
-                      F S   UID    PID   PPID  C PRI NI ADDR SZ WCHAN        TTY      TIME     CMD
-                      0 R     0   4730 128757  0  80    0 - 38329 -          pts/2    00:00:00 ps
-                      4 S     0 126134 126114  0  80    0 - 28970 do_wai     pts/2    00:00:00 bash
-                      4 S     0 128757 126134  0  80    0 - 28970 do_wai     pts/2    00:00:00 bash
-                      # F 进程旗标 说明进程的总结权限 4 为root 权限.
-                      # S 代表进程的状态   R(Running) S(Sleep) Z 僵尸进程.
-                      # PRI/NI CUP所执行的优先级 越小越优先.
-                      # ADDR SZ WCHAN 都与内存有关
-                      # TTY 登入者的终端位置 
-                      # TIME 耗费CUP的时间
-                      # CMD 命令
-                      ~~~
-          
-                9. ps  aux 显示系统所有的进程
-          
-                   1. ~~~shell
-                      root@bogon bin]# ps aux
-                      USER        PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
-                      root          1  0.0  0.3  51732  3096 ?        Ss   6月27   0:41 /usr/lib/systemd/systemd --switched-root --syste
-                      root          2  0.0  0.0      0     0 ?        S    6月27   0:00 [kthreadd]
-                      # STAT 状态 
-                      # COMMAND 命令
-                      root@bogon bin]# ps axjf   树形结构显示进程  
-                      PPID    PID   PGID    SID TTY          TPGID STAT   UID   TIME COMMAND
-                           1    849    849    849 ?            -1 Ss       0   0:00 /usr/sbin/sshd -D
-                         849 126114 126114 126114 ?            -1 Ss       0   0:00  \_ sshd: root@pts/2
-                      126114 126134 126134 126134 pts/2      5447 Ss       0   0:00      \_ -bash
-                      126134 128757 128757 126134 pts/2      5447 S        0   0:00          \_ bash
-                      128757   5447   5447 126134 pts/2      5447 R+       0   0:00              \_ ps axjf
-                      ~~~
-          
-                10. top命令
-          
-                    1. ~~~shell
-                       top -d 2 ## 每两秒更新一次top,观察整体的信息.
-                       top - 17:39:51 up 3 days, 17:06,  2 users,  load average: 0.03, 0.04, 0.05
-                       Tasks: 106 total,   2 running, 104 sleeping,   0 stopped,   0 zombie
-                       %Cpu(s):   0.0/0.0     0[                                                                                        ]
-                       KiB Mem :   995684 total,    70760 free,   313748 used,   611176 buff/cache
-                       KiB Swap:   524284 total,   401148 free,   123136 used.   488896 avail Mem 
-                       
-                       PID USER      PR  NI    VIRT    RES    SHR S %CPU %MEM     TIME+ COMMAND                                      
-                       285 root      20   0       0      0      0 S  0.5  0.0   1:58.20 xfsaild/sda3                                  
-                         1 root      20   0   51732   3096   2004 S  0.0  0.3   0:42.00 systemd 
-                       # PR 优先级 越小越好
-                       # TIME+ 累计占用cpu 的时间.
-                       ~~~
-          
-                    2. top命令执行的时候 按M可以切换为按照内存进行排序.
-          
-                    3. ~~~shell
-                       [root@bogon bin] echo $$   打印当前bash的pid
-                       128757
-                       [root@bogon bin] top -d 2 -p 128757  ## 只观察当前bash进程
-                       top - 17:56:13 up 3 days, 17:23,  2 users,  load average: 0.01, 0.02, 0.05
-                       Tasks:   1 total,   0 running,   1 sleeping,   0 stopped,   0 zombie
-                       %Cpu(s):  0.0 us,  0.0 sy,  0.0 ni,100.0 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
-                       KiB Mem :   995684 total,    70884 free,   313624 used,   611176 buff/cache
-                       KiB Swap:   524284 total,   401148 free,   123136 used.   489020 avail Mem 
-                       
-                          PID USER      PR  NI    VIRT    RES    SHR S %CPU %MEM     TIME+ COMMAND                                       
-                       128757 root      20   0  115880   2360   1792 S  0.0  0.2   0:00.04 bash  
-                       ~~~
-          
-                11. nice [-n 数字] command 给 命令赋值一个优先值  root用户可以调整的范围是:-20-19 一般用户调整的范围是:0-19.一般用户只能越调越高.
-          
-                12. renice [number] PID 已存在的进程的nice重新调整.
-          
-                13. 系统资源的观察
-          
-                    1. free 观察内存使用情况.
-                    
-                    2. uname:查阅系统和核心相关信息.
-                    
-                    3. netstat:追踪网络或socket文件
-                    
-                       1. ~~~shell
-                          [root@localhost /]# netstat
-                          Active Internet connections (w/o servers)
-                          Proto Recv-Q Send-Q Local Address           Foreign Address         State
-                          tcp        0      0 localhost.localdoma:ssh 192.168.199.1:58479     ESTABLISHED
-                          tcp        0      0 localhost.localdoma:ssh 192.168.199.1:59255     ESTABLISHED
-                          tcp        0      0 localhost.localdoma:ssh 192.168.199.1:58480     ESTABLISHED
-                          tcp        0     48 localhost.localdoma:ssh 192.168.199.1:59254     ESTABLISHED
-                          Active UNIX domain sockets (w/o servers)
-                          Proto RefCnt Flags       Type       State         I-Node   Path
-                          unix  2      [ ]         DGRAM                    11718    /run/systemd/shutdownd
-                          unix  3      [ ]         DGRAM                    9177     /run/systemd/notify
-                          unix  2      [ ]         DGRAM                    9179     /run/systemd/cgroups-agent
-                          #两部分组成:网络的连接和Linux上面的socket进程相关性部分.
-                          ## Recv-Q 非由用户进程连接到此socket的复制的总Bytes数
-                          ## Local Addrs 本地端的 ip port 情况.
-                          ## State 连接状态 :建立(ESTABLISHED) 和监听(LISTEN)
-                          # 第二部分socket文件:可以沟通两个进程之间的信息.
-                          ## RefCnt:连接到此socket的进程的数量.
-                          ## Type:socket存取的类型,主要有确认连接的STERAM和不需要确认的DGRAM两种.
-                          ## State:如果为CONNECTED表示多个进程之间已经建立了连接.
-                          ## Path:连接到此socket的相关进程的路径,或是相关数据输出的路径.
-                          ~~~
-                    
-                       2. ~~~shell
-                          [root@localhost /] netstat -tulnp # 找出目前系统上已在监听的网络连接以及pid
-                          Active Internet connections (only servers)
-                          Proto Recv-Q Send-Q  Local Address           Foreign Address         State
-                          tcp        0      0  0.0.0.0:2181            0.0.0.0:*               LISTEN    PID/Program name
-                          101762/docker-proxy
-                          ~~~
-                    
-                       3. ~~~shell
-                          [root@localhost /]# pidof systemd rsyslogd
-                          1 36720
-                          ## 根据服务名字找到pid
-                          ~~~
-                    
-                    4. SELiuux 部分以后再补充
-          
+
+               11. nice [-n 数字] command 给 命令赋值一个优先值  root用户可以调整的范围是:-20-19 一般用户调整的范围是:0-19.一般用户只能越调越高.
+
+               12. renice [number] PID 已存在的进程的nice重新调整.
+
+               13. 系统资源的观察
+
+                   1. free 观察内存使用情况.
+                   
+                   2. uname:查阅系统和核心相关信息.
+                   
+                   3. netstat:追踪网络或socket文件
+                   
+                      1. ~~~shell
+                         [root@localhost /]# netstat
+                         Active Internet connections (w/o servers)
+                         Proto Recv-Q Send-Q Local Address           Foreign Address         State
+                         tcp        0      0 localhost.localdoma:ssh 192.168.199.1:58479     ESTABLISHED
+                         tcp        0      0 localhost.localdoma:ssh 192.168.199.1:59255     ESTABLISHED
+                         tcp        0      0 localhost.localdoma:ssh 192.168.199.1:58480     ESTABLISHED
+                         tcp        0     48 localhost.localdoma:ssh 192.168.199.1:59254     ESTABLISHED
+                         Active UNIX domain sockets (w/o servers)
+                         Proto RefCnt Flags       Type       State         I-Node   Path
+                         unix  2      [ ]         DGRAM                    11718    /run/systemd/shutdownd
+                         unix  3      [ ]         DGRAM                    9177     /run/systemd/notify
+                         unix  2      [ ]         DGRAM                    9179     /run/systemd/cgroups-agent
+                         #两部分组成:网络的连接和Linux上面的socket进程相关性部分.
+                         ## Recv-Q 非由用户进程连接到此socket的复制的总Bytes数
+                         ## Local Addrs 本地端的 ip port 情况.
+                         ## State 连接状态 :建立(ESTABLISHED) 和监听(LISTEN)
+                         # 第二部分socket文件:可以沟通两个进程之间的信息.
+                         ## RefCnt:连接到此socket的进程的数量.
+                         ## Type:socket存取的类型,主要有确认连接的STERAM和不需要确认的DGRAM两种.
+                         ## State:如果为CONNECTED表示多个进程之间已经建立了连接.
+                         ## Path:连接到此socket的相关进程的路径,或是相关数据输出的路径.
+                         ~~~
+                   
+                      2. ~~~shell
+                         [root@localhost /] netstat -tulnp # 找出目前系统上已在监听的网络连接以及pid
+                         Active Internet connections (only servers)
+                         Proto Recv-Q Send-Q  Local Address           Foreign Address         State
+                         tcp        0      0  0.0.0.0:2181            0.0.0.0:*               LISTEN    PID/Program name
+                         101762/docker-proxy
+                         ~~~
+                   
+                      3. ~~~shell
+                         [root@localhost /]# pidof systemd rsyslogd
+                         1 36720
+                         ## 根据服务名字找到pid
+                         ~~~
+                   
+                   4. SELiuux 部分以后再补充
+
           21. 认识系统服务
-          
+
               1. 服务(deamon):一直在内存中的进程,就是服务.deamon是service的背景运行程序.
-          
+
               2. ~~~shell
                  [root@bogon /] systemctl  #  列出系统上面所有启动的unit(单一服务)
                    UNIT                                         LOAD   ACTIVE SUB       DESCRIPTION
@@ -1221,7 +1221,7 @@
                    # ACTIVE:状态 与SUB搭配,就是使用systemctl status查询到的
                    # DESCRIPTION:描述
                  ~~~
-          
+
               3. ~~~shell
                  [root@bogon /] systemctl list-unit-files ## 查询所有已经安装的unit有哪些
                  UNIT FILE                                     STATE   
@@ -1229,12 +1229,12 @@
                  dev-hugepages.mount                           static  
                  dev-mqueue.mount                              static  
                  ~~~
-          
+
               4. ~~~shell
                  [root@bogon /] systemctl list-units --type=service | grep ssh  ## 查询系统是否有名称为ssh的服务
                    sshd.service                       loaded active running OpenSSH server daemon
                  ~~~
-          
+
               5. ~~~shell
                  [root@bogon /] systemctl list-dependencies  ### 展示所有服务的依赖关系
                  ● ├─basic.target
@@ -1248,19 +1248,37 @@
                  ● │ ├─sockets.target
                  ● │ │ ├─dbus.socket
                  ~~~
-          
+
               6. ~~~shell
                  [root@bogon /] systemctl list-sockets ##列出所有的socket文件
                  LISTEN                      UNIT                         ACTIVATES
                  /dev/log                    systemd-journald.socket      systemd-journald.service
                  /run/dbus/system_bus_socket dbus.socket                  dbus.service
                  ~~~
-          
+
               7. 服务文件的内容,写一个自己的服务.
-          
-          22. 认识与分析登录档
-          
-              1. 
+
+
+## 实战
+
+### 检查端口占用
+
+~~~shell
+## 以2181 端口为例
+sudo lsof -i:2181
+COMMAND   PID USER   FD   TYPE   DEVICE SIZE/OFF NODE NAME
+java    12533 root  118u  IPv6 50365908      0t0  TCP *:eforward (LISTEN)
+java    12533 root  122u  IPv6 50366228      0t0  TCP localhost:eforward->localhost:34060 (ESTABLISHED)
+java    13232 root  118u  IPv6 50367691      0t0  TCP localhost:34060->localhost:eforward (ESTABLISHED)
+## 查看线程PID为12533 
+ps -ef | grep 12533
+root     12533     1  0 13:42 pts/1    00:00:01 /baicmotor_vsm/jdk/bin/java -Xmx512M -Xms512M -server -XX:+UseG1GC -XX:MaxGCPauseMillis=2..
+## 杀死线程
+kill -9 12533
+
+~~~
+
+
 
 
 
