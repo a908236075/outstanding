@@ -337,7 +337,7 @@ public class ExampleBean {
    ~~~
 
 
-   7. 方法注入:当依赖的类不是单例的,而想从容器中拿到单例类时候,可以实现ApplicationContextAware,调用getBean的方法.
+   7. **单例依赖多例**:Bean的创建只在容器初始化的之后执行一次,当单例Bean依赖多例Bean的时候,要想每次拿到不同的Bean,可以实现ApplicationContextAware,调用getBean的方法,这样每次都从容器中取.
 
       1. ~~~java
          // a class that uses a stateful Command-style class to perform some processing
@@ -468,7 +468,28 @@ public class ExampleBean {
    }
    ~~~
 
-3. 
+## 类的继承关系
+
+### xml定义类的继承关系
+
+1. ~~~xml
+   <bean id="inheritedTestBean" abstract="true"
+           class="org.springframework.beans.TestBean">
+       <property name="name" value="parent"/>
+       <property name="age" value="1"/>
+   </bean>
+   
+   <bean id="inheritsWithDifferentClass"
+           class="org.springframework.beans.DerivedTestBean"
+           parent="inheritedTestBean" init-method="initialize">  
+       <property name="name" value="override"/>
+       <!-- the age property value of 1 will be inherited from parent -->
+   </bean>
+   ~~~
+
+2. 父类必须定义为**abstract=true**,抽象的父类与实例化的Bean不同,定义了Bean的公共属性,是子类的模板.
+
+3. 如果不定义**abstract=true**,容器启动的时候会尝试实例化这个Bean.
 
 
 
