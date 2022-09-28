@@ -491,7 +491,66 @@ public class ExampleBean {
 
 3. 如果不定义**abstract=true**,容器启动的时候会尝试实例化这个Bean.
 
+## 容器扩展点
 
+### `BeanPostProcessor`
+
+1. BeanPostProcessor在此类中初始化类已经类的依赖管理,是类生成的容器,所以生成的过程都可以干预.
+2. BeanPostProcessor的生命周期是容器(are scoped per-container),每个容器独有一个BeanPostProcessor,即使是由继承关系的容器创建的同一个类,他们依然是不同的.
+3. `BeanFactoryPostProcessor` 是生产BeanPostProcessor的工厂.
+
+## 基于注解的配置
+
+### xml与注解比较
+
+1. xml能够整体的定义类的各种依赖关系以及属性,可以在代码之外清晰的了解Bean的定义.
+2. 注解配置更加的简单,写在代码中.减少了配置文件.
+
+### 常用注解
+
+#### 开启注解
+
+~~~xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+        https://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/context
+        https://www.springframework.org/schema/context/spring-context.xsd">
+
+    <context:annotation-config/>
+
+</beans>
+~~~
+
+1. 在Springboot项目默认已经开启了注解,无需单独配置
+2. 开启注解后的加载顺序
+   1. [`ConfigurationClassPostProcessor`](https://docs.spring.io/spring-framework/docs/5.3.23/javadoc-api/org/springframework/context/annotation/ConfigurationClassPostProcessor.html)
+   2. [`AutowiredAnnotationBeanPostProcessor`](https://docs.spring.io/spring-framework/docs/5.3.23/javadoc-api/org/springframework/beans/factory/annotation/AutowiredAnnotationBeanPostProcessor.html)
+   3. [`CommonAnnotationBeanPostProcessor`](https://docs.spring.io/spring-framework/docs/5.3.23/javadoc-api/org/springframework/context/annotation/CommonAnnotationBeanPostProcessor.html)
+   4. [`PersistenceAnnotationBeanPostProcessor`](https://docs.spring.io/spring-framework/docs/5.3.23/javadoc-api/org/springframework/orm/jpa/support/PersistenceAnnotationBeanPostProcessor.html)
+   5. [`EventListenerMethodProcessor`](https://docs.spring.io/spring-framework/docs/5.3.23/javadoc-api/org/springframework/context/event/EventListenerMethodProcessor.html)
+
+#### @Required
+
+~~~java
+public class SimpleMovieLister {
+
+    private MovieFinder movieFinder;
+
+    @Required
+    public void setMovieFinder(MovieFinder movieFinder) {
+        this.movieFinder = movieFinder;
+    }
+
+    // ...
+}
+~~~
+
+1. @Required定义在当初始化类时**所依赖的类必须存在**,这要避免了空指针异常.
+2. 
 
 
 
