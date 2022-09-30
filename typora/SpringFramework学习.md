@@ -968,7 +968,127 @@ public class SimpleMovieLister {
 
 ### 基于java的容器配置
 
+#### `@Bean` and `@Configuration`
 
+1. @Configuration修饰的类,暗示着对于Bean的定义是一种重要元素,需要优先进行初始化等处理.
+
+2. 两种等价的定义
+
+   1. ~~~java
+      @Configuration
+      public class AppConfig {
+      
+          @Bean
+          public MyService myService() {
+              return new MyServiceImpl();
+          }
+      }
+      ~~~
+
+   2. ~~~xml
+      <beans>
+          <bean id="myService" class="com.acme.services.MyServiceImpl"/>
+      </beans>
+      ~~~
+
+3. 当@Bean使用在了@Component而没有用在@Configuration中的时候,仅作为工厂方法的机制,而不在具有CGLIb增强的属性.不被重定向到容器的生命周期管理.出现Bug时候更难排查.
+
+#### `AnnotationConfigApplicationContext`
+
+1. @Configuration和@Component注解的类,都会注册到AnnotationConfigApplicationContext容器中.
+
+2. 调用方式
+
+   1. ~~~java
+      public static void main(String[] args) {
+          ApplicationContext ctx = new AnnotationConfigApplicationContext(AppConfig.class);
+          MyService myService = ctx.getBean(MyService.class);
+          myService.doStuff();
+      }
+      ~~~
+
+   2. ~~~java
+      public static void main(String[] args) {
+          ApplicationContext ctx = new AnnotationConfigApplicationContext(MyServiceImpl.class, Dependency1.class, Dependency2.class);
+          MyService myService = ctx.getBean(MyService.class);
+          myService.doStuff();
+      }
+      ~~~
+
+3. `register(Class<?>…)`方法.
+
+   1. ```java
+      public static void main(String[] args) {
+          AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
+          // 手动注册类
+          ctx.register(AppConfig.class, OtherConfig.class);
+          ctx.register(AdditionalConfig.class);
+          ctx.refresh();
+          MyService myService = ctx.getBean(MyService.class);
+          myService.doStuff();
+      }
+      ```
+
+4. 开启包扫描的三种方式 注解,xml和AnnotationConfigApplicationContext.scan()方法
+
+   1. ~~~java
+      @Configuration
+      @ComponentScan(basePackages = "com.acme") 
+      public class AppConfig  {
+          // ...
+      }
+      ~~~
+
+   2. ~~~xml
+      <beans>
+          <context:component-scan base-package="com.acme"/>
+      </beans>
+      ~~~
+
+   3. ~~~java
+      public static void main(String[] args) {
+          AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
+          ctx.scan("com.acme");
+          ctx.refresh();
+          MyService myService = ctx.getBean(MyService.class);
+      }
+      ~~~
+
+#### @Bean的使用
+
+1. 可以通过接口的方式实现Bean的配置
+
+   1. ~~~java
+      public interface BaseConfig {
+      
+          @Bean
+          default TransferServiceImpl transferService() {
+              return new TransferServiceImpl();
+          }
+      }
+      
+      @Configuration
+      public class AppConfig implements BaseConfig {
+      
+      }
+      ~~~
+
+2. 返回类型可以是interface或者父类
+
+   1. ~~~java
+      @Configuration
+      public class AppConfig {
+      
+          @Bean
+          public TransferService transferService() {
+              return new TransferServiceImpl();
+          }
+      }
+      ~~~
+
+   2. 这样定义只有TransferService接口对于容器来说是特殊的Bean,非惰性单例Bean根据调用顺序进行实例化,不同的类使用@Autowired TransferServiceImpl,可能导致返回的类型不同,当TransferService已经实例化后,可以向上转型为返回值的.而TransferServiceImpl只有在实例化之后,容器可能把它作为返回值.
+
+   3. 
 
 
 
