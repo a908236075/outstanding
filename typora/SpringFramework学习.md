@@ -840,6 +840,138 @@ public class SimpleMovieLister {
 
 1. @Component是容器管理的通用组件,而@Controller,@Service,@Repository是在它基础上特殊化的组件.
 
+   1. ~~~java
+      @Target(ElementType.TYPE)
+      @Retention(RetentionPolicy.RUNTIME)
+      @Documented
+      @Component 
+      public @interface Service {
+      
+          // ...
+      }
+      ~~~
+
+2. Spring可以自动的扫描组件给BeanDefinition,实例化后放入ApplicationContext.
+
+### Spring在配置文件中开启扫描
+
+1. ~~~java
+   @Configuration
+   @ComponentScan(basePackages = "org.example")
+   public class AppConfig  {
+       // ...
+   }
+   ~~~
+
+2. 有时候为了简化也写成`@ComponentScan("org.example")`.
+
+3. xml的方式
+
+   1. ~~~xml
+      <?xml version="1.0" encoding="UTF-8"?>
+      <beans xmlns="http://www.springframework.org/schema/beans"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns:context="http://www.springframework.org/schema/context"
+          xsi:schemaLocation="http://www.springframework.org/schema/beans
+              https://www.springframework.org/schema/beans/spring-beans.xsd
+              http://www.springframework.org/schema/context
+              https://www.springframework.org/schema/context/spring-context.xsd">
+      
+          <context:component-scan base-package="org.example"/>
+      
+      </beans>
+      ~~~
+
+   2. 一般`<context:component-scan>` 开启了之后意味着`<context:annotation-config>` 已经开启了,不需要单独的配置.
+
+   3. Springboot项目Applicationq启动类@SpringBootApplication注解已经包含了扫描注解,扫描的路径是当前启动类的包以及子包.
+
+4. 可以自定义不需要扫到的包.
+
+   1. ~~~java
+      @Configuration
+      @ComponentScan(basePackages = "org.example",
+              includeFilters = @Filter(type = FilterType.REGEX, pattern = ".*Stub.*Repository"),
+              excludeFilters = @Filter(Repository.class))
+      public class AppConfig {
+          // ...
+      }
+      ~~~
+
+   2. ~~~xml
+      <beans>
+          <context:component-scan base-package="org.example">
+              <context:include-filter type="regex"
+                      expression=".*Stub.*Repository"/>
+              <context:exclude-filter type="annotation"
+                      expression="org.springframework.stereotype.Repository"/>
+          </context:component-scan>
+      </beans>
+      ~~~
+
+### 在组件中定义Bean的元数据
+
+1. @Component可用定义含有@Bean的类,达到@Configuration一样的效果,本质它们是不同的@Configuration使用了CGLib 的增强,通过@Bean与其他的类产生联系,生成对应的代理调用对应的方法,代理和类的生命周期Spring 容器进行管理.
+2. @Bean方法被static修饰:
+   1. @Bean的方法被static修饰,因为此方法会容器生命周期的早起初始化,避免此方法与其他类产生联系.
+   2. @Bean的方法永远都不会被拦截,即使是@Configuration修饰,由于技术原因,代理生成的子类只能重写非静态的方法.
+   3. 如果@Bean的方法需要可重写,需要被@Configuration修饰并且就不能被private或者final修饰.
+
+### 使用JSR330标准的注解
+
+#### spring 3.0 支持JSR330的注解.
+
+#### @Inject和@Named
+
+1. 可用@Inject替换@Autowired
+
+2. 有必须依赖的类 可用有@Named定义
+
+3. ~~~java
+   import javax.inject.Inject;
+   import javax.inject.Named;
+   
+   public class SimpleMovieLister {
+   
+       private MovieFinder movieFinder;
+   
+       @Inject
+       public void setMovieFinder(@Named("main") MovieFinder movieFinder) {
+           this.movieFinder = movieFinder;
+       }
+   
+       // ...
+   }
+   ~~~
+
+#### @Named和@ManagedBean
+
+1. 可以替换@Component
+
+2. ~~~java
+   import javax.inject.Inject;
+   import javax.inject.Named;
+   
+   @Named("movieListener")  // @ManagedBean("movieListener") could be used as well
+   public class SimpleMovieLister {
+   
+       private MovieFinder movieFinder;
+   
+       @Inject
+       public void setMovieFinder(MovieFinder movieFinder) {
+           this.movieFinder = movieFinder;
+       }
+   
+       // ...
+   }
+   ~~~
+
+### 基于java的容器配置
+
+
+
+
+
 
 
 
