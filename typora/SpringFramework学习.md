@@ -549,10 +549,296 @@ public class SimpleMovieLister {
 }
 ~~~
 
-1. @Required定义在当初始化类时**所依赖的类必须存在**,这要避免了空指针异常.
-2. 
+1. @Required定义在当初始化类时**所依赖的类必须存在**,这要避免了依赖空指针异常.
 
+#### @Autowired
 
+1. 定义的位置: 构造方法,set方法或者依赖的类上.
+
+   ~~~java
+   public class MovieRecommender {
+   
+       private final CustomerPreferenceDao customerPreferenceDao;
+       
+       private MovieFinder movieFinder;
+   
+       @Autowired
+       public void setMovieFinder(MovieFinder movieFinder) {
+           this.movieFinder = movieFinder;
+       }
+   
+   
+       @Autowired
+       private MovieCatalog movieCatalog;
+   
+       @Autowired
+       public MovieRecommender(CustomerPreferenceDao customerPreferenceDao) {
+           this.customerPreferenceDao = customerPreferenceDao;
+       }
+   
+       // ...
+   }
+   ~~~
+
+2. @Autowired注解通过类型进行注入,当通过xml配置或者通过扫描注解配置的Bean,容器是知道对应的依赖关系的,但是对于 `@Bean` 工厂类的方法,直接使用会出现未有匹配的类问题.
+
+   ~~~java
+   @Configuration
+   public class BeanConfig {
+    
+       @Bean
+       public Person person() {
+           return new Person("老王", 20);
+       }
+   }
+   
+   @Configuration
+   public class ConfigBean {
+   
+       @Bean
+       @Primary
+       public BeanA firstBeanA() { return new BeanA(); }
+   
+       @Bean
+       public BeanA secondBeanA() {  return new BeanA();}
+   
+   }
+    
+   ~~~
+
+   ~~~xml
+   <?xml version="1.0" encoding="UTF-8"?>
+   <beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/context
+           https://www.springframework.org/schema/context/spring-context.xsd">
+   
+       <context:annotation-config/>
+   
+       <bean class="example.SimpleMovieCatalog" primary="true">
+           <!-- inject any dependencies required by this bean -->
+       </bean>
+   
+       <bean class="example.SimpleMovieCatalog">
+           <!-- inject any dependencies required by this bean -->
+       </bean>
+   
+       <bean id="movieRecommender" class="example.MovieRecommender"/>
+   
+   </beans>
+   ~~~
+
+   解决方法:
+
+   可用通过 `@Order`  或则`@Priority`注解.
+
+   - @Priority与@Order类似，@Order是Spring提供的注解，@Priority是JSR 250标准，都是值越小优先级越高；
+   - 与@Order不同，@Priority可以控制组件的**加载顺序**，因此@Priority侧重于单个注入的优先级排序；
+   - @Priority优先级比@Order更高，两者共存时优先加载@Priority；
+   - @Primary是优先级最高的，如果同时有@Primary、@Order、Ordered的话，@Primary注解的Bean会优先加；。
+   - @Order实际作用在类型,影响类的加载,而不能定义类组件的顺序,即使它可以写在方法上.
+
+3. 不是必须依赖类可以定义required=false,false属性的类注入的时候会被忽略.
+
+   ~~~java
+   public class SimpleMovieLister {
+   
+       private MovieFinder movieFinder;
+   
+       @Autowired(required = false)
+       public void setMovieFinder(MovieFinder movieFinder) {
+           this.movieFinder = movieFinder;
+       }
+   
+       // ...
+   }
+   ~~~
+
+   还可以通过其它的java8的Option,以及Spring Framework 5.0可以支持的@Nullable注解表示
+
+   ```java
+   public class SimpleMovieLister {
+   
+       @Autowired
+       public void setMovieFinder(Optional<MovieFinder> movieFinder) {
+           ...
+       }
+   }
+   ```
+
+   ```java
+   public class SimpleMovieLister {
+   
+       @Autowired
+       public void setMovieFinder(@Nullable MovieFinder movieFinder) {
+           ...
+       }
+   }
+   ```
+
+4. 多个构造方法
+
+   1. 单个参数的构造方法会默认被使用,如果有多个构造方法,且多个构造方法都使用了@Autowired,必须要request设置为false,以保证类使用此方法的可能,最终匹配参数最多的构造方法被使用,如果都**没有**使用@Autowired注解,如果存在默认或者主要的(primary/default constructor)将会被使用.
+
+5. 注意:@Autowired`, `@Inject`, `@Value`, 和`@Resource这些注解都是通过BeanPostProcessor完成的,所以不能在BeanPostProcessor或者BeanFactoryPostProcessor使用这些注解,因为这些注解未完成时候根本不会被容器识别.
+
+#### @Primary和@Qualifier
+
+1. 当有同名同类型的类需要注入的时候,可以使用@Primary标记,一面单例的依赖出现混乱.例如多个厂商的数据库驱动都叫做driver一样.
+
+2. ~~~java
+   @Configuration
+   public class MovieConfiguration {
+   
+       @Bean
+       @Primary
+       public MovieCatalog firstMovieCatalog() { ... }
+   
+       @Bean
+       public MovieCatalog secondMovieCatalog() { ... }
+   
+       // ...
+   }
+   ~~~
+
+3. @Qualifier
+
+   1. ~~~java
+      public class MovieRecommender {
+      
+          private MovieCatalog movieCatalog;
+      
+          private CustomerPreferenceDao customerPreferenceDao;
+      
+          @Autowired
+          public void prepare(@Qualifier("main") MovieCatalog movieCatalog,
+                  CustomerPreferenceDao customerPreferenceDao) {
+              this.movieCatalog = movieCatalog;
+              this.customerPreferenceDao = customerPreferenceDao;
+          }
+      
+          // ...
+      }
+      ~~~
+
+   2. ~~~xml
+      
+      
+      <?xml version="1.0" encoding="UTF-8"?>
+      <beans xmlns="http://www.springframework.org/schema/beans"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns:context="http://www.springframework.org/schema/context"
+          xsi:schemaLocation="http://www.springframework.org/schema/beans
+              https://www.springframework.org/schema/beans/spring-beans.xsd
+              http://www.springframework.org/schema/context
+              https://www.springframework.org/schema/context/spring-context.xsd">
+      
+          <context:annotation-config/>
+      
+          <bean class="example.SimpleMovieCatalog">
+              <qualifier value="main"/> 
+      
+              <!-- inject any dependencies required by this bean -->
+          </bean>
+      
+          <bean class="example.SimpleMovieCatalog">
+              <qualifier value="action"/> 
+      
+              <!-- inject any dependencies required by this bean -->
+          </bean>
+      
+          <bean id="movieRecommender" class="example.MovieRecommender"/>
+      
+      </beans>
+      
+      ~~~
+
+   3. 注意 当使用@Autowired这种通过类型注入的注解时候,最好还是使用id进行注入.避免发生未定义@qualifier而发生类型模糊问题.
+
+#### @Resource
+
+1. @Autowired可以放在字段上,构造方法上,多参数的方法上(set或者构造),而`@Resource` 仅可以放在字段或者单个参数的set方法上.
+2. @Resource通过名称进行注入,@Autowired通过类型进行注入.
+
+#### @Value
+
+1. 使用方法
+
+   1. ~~~java
+      @Component
+      public class MovieRecommender {
+      
+          private final String catalog;
+      
+          public MovieRecommender(@Value("${catalog.name}") String catalog) {
+              this.catalog = catalog;
+          }
+      }
+      @Configuration
+      @PropertySource("classpath:application.properties")
+      public class AppConfig { }
+      // application.properties文件的内容为:
+      catalog.name=MovieCatalog
+      ~~~
+
+   2. springboot默认会加载application.properties,所以这一步可以省略.
+
+   3. 可以设置默认值
+
+      1. ~~~java
+         @Component
+         public class MovieRecommender {
+         
+             private final String catalog;
+         
+             public MovieRecommender(@Value("${catalog.name:defaultCatalog}") String catalog) {
+                 this.catalog = catalog;
+             }
+         }
+         ~~~
+
+   4. 与@Value相关的类,此方法必须为static,可以查看所有通过@Value注入的值.
+
+      1. ~~~java
+         @Configuration
+         public class AppConfig {
+         
+             @Bean
+             public static PropertySourcesPlaceholderConfigurer propertyPlaceholderConfigurer() {
+                 return new PropertySourcesPlaceholderConfigurer();
+             }
+         }
+         ~~~
+
+#### @PostConstruct和@PreDestory	
+
+1. 与实现BeanPostProcess接口掌握容器类所有类声明周期不同,通过@PostConstruct和@PreDestroy掌握单个类的生命周期.
+
+2. ~~~java
+   public class CachingMovieLister {
+   
+       @PostConstruct
+       public void populateMovieCache() {
+           // populates the movie cache upon initialization...
+       }
+   
+       @PreDestroy
+       public void clearMovieCache() {
+           // clears the movie cache upon destruction...
+       }
+   }
+   ~~~
+
+3. 注意JDK6-8支持这个两个注解,在JDK9中将他们从core中移除到其它地方,并在JDK11上彻底移除,但可以通过Maven依赖的方式支持.
+
+## 类路径扫描与组件Component管理
+
+### @Component和其它扩展构造注解
+
+1. @Component是容器管理的通用组件,而@Controller,@Service,@Repository是在它基础上特殊化的组件.
 
 
 
