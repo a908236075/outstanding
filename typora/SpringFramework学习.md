@@ -1088,7 +1088,338 @@ public class SimpleMovieLister {
 
    2. 这样定义只有TransferService接口对于容器来说是特殊的Bean,非惰性单例Bean根据调用顺序进行实例化,不同的类使用@Autowired TransferServiceImpl,可能导致返回的类型不同,当TransferService已经实例化后,可以向上转型为返回值的.而TransferServiceImpl只有在实例化之后,容器可能把它作为返回值.
 
-   3. 
+3. @Bean可以定义生命周期方法
+
+   1. ~~~java
+      public class BeanOne {
+      
+          public void init() {
+              // initialization logic
+          }
+      }
+      
+      public class BeanTwo {
+      
+          public void cleanup() {
+              // destruction logic
+          }
+      }
+      
+      @Configuration
+      public class AppConfig {
+      
+          @Bean(initMethod = "init")
+          public BeanOne beanOne() {
+              return new BeanOne();
+          }
+      
+          @Bean(destroyMethod = "cleanup")
+          public BeanTwo beanTwo() {
+              return new BeanTwo();
+          }
+      }
+      ~~~
+
+4. @Bean可以与作用域@Scope,命名,别名,描述一起使用
+
+   1. ~~~java
+      @Configuration
+      public class MyConfiguration {
+      
+          @Bean
+          @Scope("prototype")
+          public Encryptor encryptor() {
+              // ...
+          }
+      }
+      @Configuration
+      public class AppConfig {
+      
+          @Bean("myThing")
+          public Thing thing() {
+              return new Thing();
+          }
+      }
+      // 多个别名
+      @Configuration
+      public class AppConfig {
+      
+          @Bean({"dataSource", "subsystemA-dataSource", "subsystemB-dataSource"})
+          public DataSource dataSource() {
+              // instantiate, configure and return DataSource bean...
+          }
+      }
+      @Configuration
+      public class AppConfig {
+      
+          @Bean
+          @Description("Provides a basic example of a bean")
+          public Thing thing() {
+              return new Thing();
+          }
+      }
+      ~~~
+
+
+#### @Configuration的使用
+
+1. 实现多例调用
+
+   ~~~java
+   @Bean
+   @Scope("prototype")
+   public AsyncCommand asyncCommand() {
+       AsyncCommand command = new AsyncCommand();
+       // inject dependencies here as required
+       return command;
+   }
+   
+   @Bean
+   public CommandManager commandManager() {
+       // return new anonymous implementation of CommandManager with createCommand()
+       // overridden to return a new prototype Command object
+       return new CommandManager() {
+           protected Command createCommand() {
+               return asyncCommand();
+           }
+       }
+   }
+   ~~~
+
+2. 不能生效的多例调用
+
+   1. ~~~java
+      @Configuration
+      public class AppConfig {
+      
+          @Bean
+          public ClientService clientService1() {
+              ClientServiceImpl clientService = new ClientServiceImpl();
+              clientService.setClientDao(clientDao());
+              return clientService;
+          }
+      
+          @Bean
+          public ClientService clientService2() {
+              ClientServiceImpl clientService = new ClientServiceImpl();
+              clientService.setClientDao(clientDao());
+              return clientService;
+          }
+      
+          @Bean
+          public ClientDao clientDao() {
+              return new ClientDaoImpl();
+          }
+      }
+      ~~~
+
+   2. 原因:@Configuration的类都会作为CGLIB的子类,当子类调用父类的方法时候,会检测@Scoped作用域,默认为单例,则优先从已有的缓存中查找.更改是在clientDao方法上添加@Scope("prototype")
+
+#### @import使用
+
+1. 注入依赖
+
+   1. ~~~java
+      @Configuration
+      public class ServiceConfig {
+      
+          @Bean
+          public TransferService transferService(AccountRepository accountRepository) {
+              return new TransferServiceImpl(accountRepository);
+          }
+      }
+      
+      @Configuration
+      public class RepositoryConfig {
+      
+          @Bean
+          public AccountRepository accountRepository(DataSource dataSource) {
+              return new JdbcAccountRepository(dataSource);
+          }
+      }
+      
+      @Configuration
+      @Import({ServiceConfig.class, RepositoryConfig.class})
+      public class SystemTestConfig {
+      
+          @Bean
+          public DataSource dataSource() {
+              // return new DataSource
+          }
+      }
+      
+      public static void main(String[] args) {
+          ApplicationContext ctx = new AnnotationConfigApplicationContext(SystemTestConfig.class);
+          // everything wires up across configuration classes...
+          TransferService transferService = ctx.getBean(TransferService.class);
+          transferService.transfer(100.00, "A123", "C456");
+      }
+      ~~~
+
+#### @ImportResource使用
+
+1. ~~~java
+   @Configuration
+   @ImportResource("classpath:/com/acme/properties-config.xml")
+   public class AppConfig {
+   
+       @Value("${jdbc.url}")
+       private String url;
+   
+       @Value("${jdbc.username}")
+       private String username;
+   
+       @Value("${jdbc.password}")
+       private String password;
+   
+       @Bean
+       public DataSource dataSource() {
+           return new DriverManagerDataSource(url, username, password);
+       }
+   }
+   ~~~
+
+### 抽象的环境
+
+#### @Profile使用
+
+1. 定义:@Profile定义的类存活的时候,当前类才有资格进行初始化.
+
+2. ~~~java
+   @Configuration
+   public class AppConfig {
+   
+       @Bean("dataSource")
+       @Profile("development") 
+       public DataSource standaloneDataSource() {
+           return new EmbeddedDatabaseBuilder()
+               .setType(EmbeddedDatabaseType.HSQL)
+               .addScript("classpath:com/bank/config/sql/schema.sql")
+               .addScript("classpath:com/bank/config/sql/test-data.sql")
+               .build();
+       }
+   
+       @Bean("dataSource")
+       @Profile("production") 
+       public DataSource jndiDataSource() throws Exception {
+           Context ctx = new InitialContext();
+           return (DataSource) ctx.lookup("java:comp/env/jdbc/datasource");
+       }
+   }
+   ~~~
+
+3. 注意:重载有@Profile条件方法时候,@Profile依然有效,有时候会出现不一致的情况,导致方法永远无法调用,对用重名的方法,可以通过@Bean("name")不同的name进行限定.
+
+4. 在xml中使用@Profile
+
+   1. ~~~xml
+      
+      
+      <beans profile="development"
+          xmlns="http://www.springframework.org/schema/beans"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+          xsi:schemaLocation="...">
+      
+          <jdbc:embedded-database id="dataSource">
+              <jdbc:script location="classpath:com/bank/config/sql/schema.sql"/>
+              <jdbc:script location="classpath:com/bank/config/sql/test-data.sql"/>
+          </jdbc:embedded-database>
+      </beans>
+      
+      
+      <beans xmlns="http://www.springframework.org/schema/beans"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+          xmlns:jee="http://www.springframework.org/schema/jee"
+          xsi:schemaLocation="...">
+      
+          <!-- other bean definitions -->
+      
+          <beans profile="development">
+              <jdbc:embedded-database id="dataSource">
+                  <jdbc:script location="classpath:com/bank/config/sql/schema.sql"/>
+                  <jdbc:script location="classpath:com/bank/config/sql/test-data.sql"/>
+              </jdbc:embedded-database>
+          </beans>
+      
+          <beans profile="production">
+              <jee:jndi-lookup id="dataSource" jndi-name="java:comp/env/jdbc/datasource"/>
+          </beans>
+      </beans>
+      
+      ~~~
+
+   2. 激活@Profile
+
+      1. 未激活会出现NoSuchBeanDefinitionException,直接通过ApplicationContext激活
+
+         ~~~java
+         AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext();
+         ctx.getEnvironment().setActiveProfiles("development");
+         ctx.register(SomeConfig.class, StandaloneDataConfig.class, JndiDataConfig.class);
+         ctx.refresh();
+         ~~~
+
+   #### `@PropertySource`  使用
+
+   1. 可用通过Environment 判断source是否存在
+
+      1. ~~~java
+         ApplicationContext ctx = new GenericApplicationContext();
+         Environment env = ctx.getEnvironment();
+         boolean containsMyProperty = env.containsProperty("my-property");
+         System.out.println("Does my environment contain the 'my-property' property? " + containsMyProperty);
+         // getSource
+         MutablePropertySources sources = ctx.getEnvironment().getPropertySources();
+         ~~~
+
+   2. 定义:Spring环境中存在@PropertySource修饰的类才进行实例化.
+
+###  `ApplicationContext`特有的能力
+
+#### 相对于BeanFactory做了以下功能的增强
+
+- Access to messages in i18n-style, through the `MessageSource` interface.
+- Access to resources, such as URLs and files, through the `ResourceLoader` interface.
+- Event publication, namely to beans that implement the `ApplicationListener` interface, through the use of the `ApplicationEventPublisher` interface.
+- Loading of multiple (hierarchical) contexts, letting each be focused on one particular layer, such as the web layer of an application, through the `HierarchicalBeanFactory` interface.
+
+#### MessageSource 国际化
+
+#### Custom Event 发布订阅模式
+
+### BeanFactory API
+
+#### BeanFactory和Application比较
+
+| Feature                                                      | `BeanFactory` | `ApplicationContext` |
+| ------------------------------------------------------------ | ------------- | -------------------- |
+| Bean instantiation/wiring                                    | Yes           | Yes                  |
+| Integrated lifecycle management                              | No            | Yes                  |
+| Automatic `BeanPostProcessor` registration                   | No            | Yes                  |
+| Automatic `BeanFactoryPostProcessor` registration            | No            | Yes                  |
+| Convenient `MessageSource` access (for internationalization) | No            | Yes                  |
+| Built-in `ApplicationEvent` publication mechanism            | No            | Yes                  |
+
+1. 能用Application不用BeanFactory.Application对应GenericApplicationContext,BeanFactory对应DefaultListableBeanFactory.
+
+2. DefaultListableBeanFactory也可以注册BeanPostProcessor,但需要显示的调用.
+
+   1. ~~~java
+      DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+      // populate the factory with bean definitions
+      
+      // now register any needed BeanPostProcessor instances
+      factory.addBeanPostProcessor(new AutowiredAnnotationBeanPostProcessor());
+      factory.addBeanPostProcessor(new MyBeanPostProcessor());
+      
+      // now start using the factory
+      ~~~
+
+
+
+
 
 
 
