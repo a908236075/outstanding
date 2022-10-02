@@ -1,4 +1,4 @@
-# 1. IOC容器
+#  1.IOC容器
 
 ## Bean的定义
 
@@ -1417,11 +1417,195 @@ public class SimpleMovieLister {
       // now start using the factory
       ~~~
 
+# 2.Resources
 
+## 介绍
 
+​	java.net.URL没有标准的URL对ServletContext的资源的访问,所以Spring提供了Resource接口.
 
+## Resource的接口
 
+~~~java
+public interface Resource extends InputStreamSource {
 
+    boolean exists();
+
+    boolean isReadable();
+	// 防止内存泄露 正在读取时,其它的资源不能进行读取
+    boolean isOpen();
+
+    boolean isFile();
+
+    URL getURL() throws IOException;
+
+    URI getURI() throws IOException;
+
+    File getFile() throws IOException;
+
+    ReadableByteChannel readableChannel() throws IOException;
+
+    long contentLength() throws IOException;
+
+    long lastModified() throws IOException;
+
+    Resource createRelative(String relativePath) throws IOException;
+
+    String getFilename();
+
+    String getDescription();
+}
+
+public interface InputStreamSource {
+
+    InputStream getInputStream() throws IOException;
+}
+~~~
+
+## Resource实现类
+
+### Spring经常用到的实现类
+
+- [`UrlResource`](https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#resources-implementations-urlresource)
+- [`ClassPathResource`](https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#resources-implementations-classpathresource)
+- [`FileSystemResource`](https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#resources-implementations-filesystemresource)
+- [`PathResource`](https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#resources-implementations-pathresource)
+- [`ServletContextResource`](https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#resources-implementations-servletcontextresource)
+- [`InputStreamResource`](https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#resources-implementations-inputstreamresource)
+- [`ByteArrayResource`](https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#resources-implementations-bytearrayresource)
+
+### ResourceLoader
+
+#### 定义:通过ResourceLoader获取Resource
+
+~~~java
+public interface ResourceLoader {
+
+    Resource getResource(String location);
+
+    ClassLoader getClassLoader();
+}
+ClassPathXmlApplicationContext ctx=new ClassPathXmlApplicationContext ();
+Resource template = ctx.getResource("some/resource/path/myTemplate.txt");
+~~~
+
+#### 根据前缀获取不同的Resource
+
+| Prefix     | Example                          | Explanation                                                  |
+| ---------- | -------------------------------- | ------------------------------------------------------------ |
+| classpath: | `classpath:com/myapp/config.xml` | Loaded from the classpath.                                   |
+| file:      | `file:///data/config.xml`        | Loaded as a `URL` from the filesystem. See also [`FileSystemResource` Caveats](https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#resources-filesystemresource-caveats). |
+| https:     | `https://myserver/logo.png`      | Loaded as a `URL`.                                           |
+| (none)     | `/data/config.xml`               | Depends on the underlying `ApplicationContext`.              |
+
+### ResourcePatternResolver接口
+
+#### 定义
+
+​	解决了资源匹配的路径策略问题.Spring可以直接获取Resource下面的资源是通过此接口实现.
+
+~~~java
+public interface ResourcePatternResolver extends ResourceLoader {
+
+    String CLASSPATH_ALL_URL_PREFIX = "classpath*:";
+
+    Resource[] getResources(String locationPattern) throws IOException;
+}
+~~~
+
+### ResourceLoaderAware接口
+
+#### 定义
+
+​	提供ResourceLoader的接口.
+
+~~~java
+public interface ResourceLoaderAware {
+
+    void setResourceLoader(ResourceLoader resourceLoader);
+}
+~~~
+
+#### 使用注意点
+
+1. ApplicationContext就是一种,ResourceLoader,但是由于它比较大,一般不会将整类都返回.
+
+### Resources作为依赖
+
+#### 定义
+
+​	当程序想要动态的加载资源,会将resource作为依赖.例如根据不同使用的角色加载不同的资源.
+
+#### 通过xml
+
+~~~java
+package example;
+
+public class MyBean {
+
+    private Resource template;
+
+    public setTemplate(Resource template) {
+        this.template = template;
+    }
+
+    // ...
+}
+~~~
+
+~~~xml
+<bean id="myBean" class="example.MyBean">
+    <property name="template" value="some/resource/path/myTemplate.txt"/>
+</bean>
+~~~
+
+#### 通过注解
+
+~~~java
+@Component
+public class MyBean {
+
+    private final Resource template;
+
+    public MyBean(@Value("${template.path}") Resource template) {
+        this.template = template;
+    }
+
+    // ...
+}
+~~~
+
+### Application Contexts and Resource Paths
+
+#### 创建不同的ApplicationContext
+
+1. 即使url更符合某一ApplicationContext,但是还是以实际调用的为准
+
+   1. ~~~java
+      ApplicationContext ctx =
+          new FileSystemXmlApplicationContext("classpath:conf/appContext.xml");
+      ~~~
+
+   2. 其实"classpath:conf/appContext.xml"更符合ClassPathXmlApplicationContext.
+
+### 资源路径使用通配符
+
+~~~java
+ApplicationContext ctx =
+    new ClassPathXmlApplicationContext("classpath*:conf/appContext.xml");
+~~~
+
+classpath*能够生效,因为ClassLoader的实现,如果application 服务有自己的ClassLoader,需要通过getClass().getClassLoader().getResources("<someFileInsideTheJar>")进行检查是否能够生效.
+
+#### 常见的路径
+
+```text
+/WEB-INF/*-context.xml
+com/mycompany/**/applicationContext.xml
+file:C:/some/path/*-context.xml
+classpath:com/mycompany/**/applicationContext.xml
+```
+
+# 3.检验,数据绑定和类型转换
 
 
 
