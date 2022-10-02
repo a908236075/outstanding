@@ -1607,7 +1607,280 @@ classpath:com/mycompany/**/applicationContext.xml
 
 # 3.检验,数据绑定和类型转换
 
+## 校验
 
+### 定义
+
+​	验证不应该被绑定到web层，应该容易本地化，并且应该能够插入任何可用的验证器.基于此Spring的Validator在容器的每一层都能使用.
+
+### 使用
+
+~~~java
+public class PersonValidator implements Validator {
+
+    /**
+     * This Validator validates only Person instances
+     */
+    public boolean supports(Class clazz) {
+        return Person.class.equals(clazz);
+    }
+
+    public void validate(Object obj, Errors e) {
+        // name 字段名 name.empty 是返回的信息
+        ValidationUtils.rejectIfEmpty(e, "name", "name.empty");
+        Person p = (Person) obj;
+        if (p.getAge() < 0) {
+            e.rejectValue("age", "negativevalue");
+        } else if (p.getAge() > 110) {
+            e.rejectValue("age", "too.darn.old");
+        }
+    }
+}
+~~~
+
+类相互依赖导致校验是的逻辑也要做对应的拷贝处理,可以将依赖类的校验类作为依赖,校验对应的类.
+
+~~~java
+public class CustomerValidator implements Validator {
+
+    private final Validator addressValidator;
+
+    public CustomerValidator(Validator addressValidator) {
+        if (addressValidator == null) {
+            throw new IllegalArgumentException("The supplied [Validator] is " +
+                "required and must not be null.");
+        }
+        if (!addressValidator.supports(Address.class)) {
+            throw new IllegalArgumentException("The supplied [Validator] must " +
+                "support the validation of [Address] instances.");
+        }
+        this.addressValidator = addressValidator;
+    }
+
+    /**
+     * This Validator validates Customer instances, and any subclasses of Customer too
+     */
+    public boolean supports(Class clazz) {
+        return Customer.class.isAssignableFrom(clazz);
+    }
+
+    public void validate(Object target, Errors errors) {
+        ValidationUtils.rejectIfEmptyOrWhitespace(errors, "firstName", "field.required");
+        ValidationUtils.rejectIfEmptyOrWhitespace(errors, "surname", "field.required");
+        Customer customer = (Customer) target;
+        try {
+            errors.pushNestedPath("address");
+            ValidationUtils.invokeValidator(this.addressValidator, customer.getAddress(), errors);
+        } finally {
+            errors.popNestedPath();
+        }
+    }
+}
+~~~
+
+## BeanWrapper
+
+1. 虽然不经常使用BeanWarpper,但是可以通过它实现数据的绑定.而且通过此类实现PropertyEditor经常被用到.
+
+2. ~~~java
+   public class Company {
+   
+       private String name;
+       private Employee managingDirector;
+   
+       public String getName() {
+           return this.name;
+       }
+   
+       public void setName(String name) {
+           this.name = name;
+       }
+   
+       public Employee getManagingDirector() {
+           return this.managingDirector;
+       }
+   
+       public void setManagingDirector(Employee managingDirector) {
+           this.managingDirector = managingDirector;
+       }
+   }
+   
+   public class Employee {
+   
+       private String name;
+   
+       private float salary;
+   
+       public String getName() {
+           return this.name;
+       }
+   
+       public void setName(String name) {
+           this.name = name;
+       }
+   
+       public float getSalary() {
+           return salary;
+       }
+   
+       public void setSalary(float salary) {
+           this.salary = salary;
+       }
+   }
+   BeanWrapper company = new BeanWrapperImpl(new Company());
+   // setting the company name..
+   company.setPropertyValue("name", "Some Company Inc.");
+   // ... can also be done like this:
+   PropertyValue value = new PropertyValue("name", "Some Company Inc.");
+   company.setPropertyValue(value);
+   
+   // ok, let's create the director and tie it to the company:
+   BeanWrapper jim = new BeanWrapperImpl(new Employee());
+   jim.setPropertyValue("name", "Jim Stravinsky");
+   company.setPropertyValue("managingDirector", jim.getWrappedInstance());
+   
+   // retrieving the salary of the managingDirector through the company
+   Float salary = (Float) company.getPropertyValue("managingDirector.salary");
+   ~~~
+
+3. `PropertyEditor` :当例如String类型的时间,默认转换成可读的'2007-14-09'还是原始的时间格式,可以通过注册PropertyEditor来进行定义.Controller的属性绑定也通过PropertyEditor来实现.
+
+4. 可以自定义`PropertyEditor` ,并通过`PropertyEditorRegistrar`进行注册生效.具体见
+
+   [官网]: https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#validation	"官网"
+
+## 类型转换
+
+### Converter接口实现
+
+~~~java
+package org.springframework.core.convert.converter;
+
+public interface Converter<S, T> {
+
+    T convert(S source);
+}
+
+package org.springframework.core.convert.support;
+
+final class StringToInteger implements Converter<String, Integer> {
+
+    public Integer convert(String source) {
+        return Integer.valueOf(source);
+    }
+}
+~~~
+
+### `ConverterFactory`
+
+1. 如果想要将类型转换应用到整个类层次结构,需要使用ConverterFactory.
+
+2. ~~~java
+   package org.springframework.core.convert.converter;
+   // S 转换到R
+   public interface ConverterFactory<S, R> {
+   
+       <T extends R> Converter<S, T> getConverter(Class<T> targetType);
+   }
+   ~~~
+
+3. ~~~java
+   package org.springframework.core.convert.support;
+   
+   final class StringToEnumConverterFactory implements ConverterFactory<String, Enum> {
+   
+       public <T extends Enum> Converter<String, T> getConverter(Class<T> targetType) {
+           return new StringToEnumConverter(targetType);
+       }
+   
+       private final class StringToEnumConverter<T extends Enum> implements Converter<String, T> {
+   
+           private Class<T> enumType;
+   
+           public StringToEnumConverter(Class<T> enumType) {
+               this.enumType = enumType;
+           }
+   
+           public T convert(String source) {
+               return (T) Enum.valueOf(this.enumType, source.trim());
+           }
+       }
+   }
+   ~~~
+
+### `GenericConverter`
+
+1. GenericConverter虽然没有Converter功能强大,但在简单类型的转换上更加的灵活.
+
+2. ~~~java
+   package org.springframework.core.convert.converter;
+   
+   public interface GenericConverter {
+   
+       public Set<ConvertiblePair> getConvertibleTypes();
+   
+       Object convert(Object source, TypeDescriptor sourceType, TypeDescriptor targetType);
+   }
+   ~~~
+
+3. `ConditionalGenericConverter` 条件匹配后才转换
+
+   1. ~~~java
+      public interface ConditionalConverter {
+      
+          boolean matches(TypeDescriptor sourceType, TypeDescriptor targetType);
+      }
+      
+      public interface ConditionalGenericConverter extends GenericConverter, ConditionalConverter {
+      }
+      ~~~
+
+### ConversionService 定义
+
+1. ConversionService 应该是一个无状态的,不同的容器都可定义ConversionService .
+
+2. ~~~xml
+   <bean id="conversionService"
+           class="org.springframework.context.support.ConversionServiceFactoryBean">
+       <property name="converters">
+           <set>
+               <bean class="example.MyCustomConverter"/>
+           </set>
+       </property>
+   </bean>
+   ~~~
+
+3. strings, numbers, enums, collections, maps, and other common types都可以进行转换.
+
+4. 代码的方式使用ConversionService.
+
+~~~java
+@Service
+public class MyService {
+
+    public MyService(ConversionService conversionService) {
+        this.conversionService = conversionService;
+    }
+
+    public void doIt() {
+        this.conversionService.convert(...)
+    }
+}
+
+// 使用 TypeDescriptor 简化操作
+DefaultConversionService cs = new DefaultConversionService();
+// 将集合中的Integer类型转换为String
+List<Integer> input = ...
+cs.convert(input,
+    TypeDescriptor.forObject(input), // List<Integer> type descriptor
+    TypeDescriptor.collection(List.class, TypeDescriptor.valueOf(String.class)));
+~~~
+
+
+
+
+
+​	
 
 
 
