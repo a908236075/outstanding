@@ -1876,13 +1876,237 @@ cs.convert(input,
     TypeDescriptor.collection(List.class, TypeDescriptor.valueOf(String.class)));
 ~~~
 
+## 字段格式化
 
+定义:当需要类型转变的时候,使用ConversionService,但是当例如我们需要根据不同的环境格式化String的时候,可以用Spring3提供的Formatter或者PropertyEditor.
 
+### `Formatter` SPI
 
+1. ~~~java
+   package org.springframework.format;
+   
+   public interface Formatter<T> extends Printer<T>, Parser<T> {
+   }
+   
+   public interface Printer<T> {
+   
+       String print(T fieldValue, Locale locale);
+   }
+   
+   import java.text.ParseException;
+   
+   public interface Parser<T> {
+   
+       T parse(String clientValue, Locale locale) throws ParseException;
+   }
+   ~~~
 
-​	
+2. 其它格式化的工具:The `number` package provides `NumberStyleFormatter`, `CurrencyStyleFormatter`, and `PercentStyleFormatter` to format `Number` objects that use a `java.text.NumberFormat`. The `datetime` package provides a `DateFormatter` to format `java.util.Date` objects with a `java.text.DateFormat`.
 
+3. 实现时间格式化的例子
 
+   1. ~~~java
+      package org.springframework.format.datetime;
+      
+      public final class DateFormatter implements Formatter<Date> {
+      
+          private String pattern;
+      
+          public DateFormatter(String pattern) {
+              this.pattern = pattern;
+          }
+      
+          public String print(Date date, Locale locale) {
+              if (date == null) {
+                  return "";
+              }
+              return getDateFormat(locale).format(date);
+          }
+      
+          public Date parse(String formatted, Locale locale) throws ParseException {
+              if (formatted.length() == 0) {
+                  return null;
+              }
+              return getDateFormat(locale).parse(formatted);
+          }
+      
+          protected DateFormat getDateFormat(Locale locale) {
+              DateFormat dateFormat = new SimpleDateFormat(this.pattern, locale);
+              dateFormat.setLenient(false);
+              return dateFormat;
+          }
+      }
+      ~~~
+
+### 注解的方式格式字段
+
+1. ~~~java
+   package org.springframework.format;
+   
+   public interface AnnotationFormatterFactory<A extends Annotation> {
+   
+       Set<Class<?>> getFieldTypes();
+   
+       Printer<?> getPrinter(A annotation, Class<?> fieldType);
+   
+       Parser<?> getParser(A annotation, Class<?> fieldType);
+   }
+   ~~~
+
+2. AnnotationFormatterFactory通过绑定@NumberFormat 实现自定义的格式化
+
+   1. ~~~java
+      public final class NumberFormatAnnotationFormatterFactory
+              implements AnnotationFormatterFactory<NumberFormat> {
+      
+          public Set<Class<?>> getFieldTypes() {
+              return new HashSet<Class<?>>(asList(new Class<?>[] {
+                  Short.class, Integer.class, Long.class, Float.class,
+                  Double.class, BigDecimal.class, BigInteger.class }));
+          }
+      	// NumberFormat
+          public Printer<Number> getPrinter(NumberFormat annotation, Class<?> fieldType) {
+              return configureFormatterFrom(annotation, fieldType);
+          }
+      
+          public Parser<Number> getParser(NumberFormat annotation, Class<?> fieldType) {
+              return configureFormatterFrom(annotation, fieldType);
+          }
+      
+          private Formatter<Number> configureFormatterFrom(NumberFormat annotation, Class<?> fieldType) {
+              if (!annotation.pattern().isEmpty()) {
+                  return new NumberStyleFormatter(annotation.pattern());
+              } else {
+                  Style style = annotation.style();
+                  if (style == Style.PERCENT) {
+                      return new PercentStyleFormatter();
+                  } else if (style == Style.CURRENCY) {
+                      return new CurrencyStyleFormatter();
+                  } else {
+                      return new NumberStyleFormatter();
+                  }
+              }
+          }
+      }
+      ~~~
+
+   2. ~~~java
+      public class MyModel {
+      
+          @NumberFormat(style=Style.CURRENCY)
+          private BigDecimal decimal;
+      }
+      ~~~
+
+3. 标准化的注解
+
+   1. org.springframework.format.annotation 包下的@NumberFormat 格式化数字, `@DateTimeFormat`格式化时间.
+
+   2. ~~~java
+      public class MyModel {
+      
+          @DateTimeFormat(iso=ISO.DATE)
+          private Date date;
+      }
+      ~~~
+
+4. 可以通过`FormatterRegistry`  注册自己的格式化类.详见官网.
+
+### 	全局的时间格式化
+
+1. 注解的方式
+
+   ~~~java
+   @Configuration
+   public class AppConfig {
+   
+       @Bean
+       public FormattingConversionService conversionService() {
+   
+           // Use the DefaultFormattingConversionService but do not register defaults
+           DefaultFormattingConversionService conversionService = new DefaultFormattingConversionService(false);
+   
+           // Ensure @NumberFormat is still supported
+           conversionService.addFormatterForFieldAnnotation(new NumberFormatAnnotationFormatterFactory());
+   
+           // Register JSR-310 date conversion with a specific global format
+           DateTimeFormatterRegistrar registrar = new DateTimeFormatterRegistrar();
+           registrar.setDateFormatter(DateTimeFormatter.ofPattern("yyyyMMdd"));
+           registrar.registerFormatters(conversionService);
+   
+           // Register date conversion with a specific global format
+           DateFormatterRegistrar registrar = new DateFormatterRegistrar();
+           registrar.setFormatter(new DateFormatter("yyyyMMdd"));
+           registrar.registerFormatters(conversionService);
+   
+           return conversionService;
+       }
+   }
+   ~~~
+
+2. 就是将DefaultFormattingConversionService默认支持的格式化方式去掉,给有自己定义的时间格式化器.
+
+3. xml的方式
+
+   ~~~xml
+   <?xml version="1.0" encoding="UTF-8"?>
+   <beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="
+           http://www.springframework.org/schema/beans
+           https://www.springframework.org/schema/beans/spring-beans.xsd>
+   
+       <bean id="conversionService" class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+           <property name="registerDefaultFormatters" value="false" />
+           <property name="formatters">
+               <set>
+                   <bean class="org.springframework.format.number.NumberFormatAnnotationFormatterFactory" />
+               </set>
+           </property>
+           <property name="formatterRegistrars">
+               <set>
+                   <bean class="org.springframework.format.datetime.standard.DateTimeFormatterRegistrar">
+                       <property name="dateFormatter">
+                           <bean class="org.springframework.format.datetime.standard.DateTimeFormatterFactoryBean">
+                               <property name="pattern" value="yyyyMMdd"/>
+                           </bean>
+                       </property>
+                   </bean>
+               </set>
+           </property>
+       </bean>
+   </beans>
+   ~~~
+
+### Java Bean的有效性验证
+
+~~~java
+public class PersonForm {
+
+    @NotNull
+    @Size(max=64)
+    private String name;
+
+    @Min(0)
+    private int age;
+}
+~~~
+
+一般会根据引入的依赖API进行使用,例如[Hibernate Validator](https://hibernate.org/validator/),如果将验证作为Spring Bean,可以官网学习.
+
+# 4.Spring表达式语言(SpEL)
+
+定义:可以在编译时期查询或者操作对象.
+
+```java
+ExpressionParser parser = new SpelExpressionParser();
+Expression exp = parser.parseExpression("'Hello World'.concat('!')"); 
+String message = (String) exp.getValue();
+```
+
+应用场景百度了一大圈也不知道常用的场景到底是啥,暂时先不学习.
+
+# 5.面向切面编程
 
 
 
