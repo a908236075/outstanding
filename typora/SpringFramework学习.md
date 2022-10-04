@@ -2108,6 +2108,160 @@ String message = (String) exp.getValue();
 
 # 5.面向切面编程
 
+## AOP概念
+
+- 切面:想要织入的逻辑
+- 切入点:程序被织入的地方.
+- 通知:特定的连接点上采取的动作.
+- 切点:一个表达式,表达切入点的位置
+- 介绍:代表类型声明额外的方法或字段.
+- 目标对象:被织入通知的对象.
+- AOP代理
+- 织入:连接切面和目标对象.
+
+## 支持@AspectJ
+
+### 注解的方式和xlm的方式开启切面配置
+
+~~~java
+@Configuration
+@EnableAspectJAutoProxy
+public class AppConfig {
+
+}
+~~~
+
+~~~xml
+<aop:aspectj-autoproxy/>
+~~~
+
+### 定义一个切面
+
+1. ~~~java
+   <bean id="myAspect" class="org.xyz.NotVeryUsefulAspect">
+       <!-- configure properties of the aspect here -->
+   </bean>
+   ~~~
+
+2. ~~~java
+   package org.xyz;
+   import org.aspectj.lang.annotation.Aspect;
+   
+   @Aspect
+   public class NotVeryUsefulAspect {
+   
+   }
+   ~~~
+
+3. 注意使用,可用通过@Bean和@Configuration注册一个切面,也可以使用类路径扫描,**但是切面不足以类的自动监测**,需要格外的@Component注解.
+
+### 定义一个切点
+
+1. 切点是描述切面需要加入的位置.
+
+2. ~~~java
+   @Pointcut("execution(* transfer(..))") // the pointcut expression
+   private void anyOldTransfer() {} // the pointcut signature
+   ~~~
+
+3. 切点支持的标识符
+
+   1. execution:
+
+4. 一般JDK的代理只有public方法的代理,才有可能被拦截.而CGLib的代理可以是public和protect方法,如果切点严格定义是公共方法,如果想被拦截,protectd的方法需要做相应的改变.
+
+5. 经常用到的切面表达
+
+   1. 任何的public 方法时执行
+
+      ```java
+       execution(public * *(..))
+      ```
+
+   2. 任何以set开头的方法时执行
+
+      ~~~java
+       execution(* set*(..))
+      ~~~
+
+   3. service包下执行
+
+      ```java
+       execution(* com.xyz.service.*.*(..))
+      ```
+
+   4. service包以及子包
+
+      ~~~java
+      execution(* com.xyz.service..*.*(..))
+      ~~~
+
+   5. 任何切面涉及到service包,只针对Spring的AOP.
+
+      ```java
+      within(com.xyz.service.*)
+      ```
+
+   6. 任何切面的代理实现了AccountService接口的时候
+
+      ~~~java
+      this(com.xyz.service.AccountService)
+      ~~~
+
+   7. 任何切面的目标对象实现了AccountService接口
+
+      ```java
+      target(com.xyz.service.AccountService)
+      ```
+
+   8. 任何切面使用到了一个参数,而且运行是传递的参数类型是Serializable,注意它与execution(* *(java.io.Serializable))不同,这个代表的匹配到生命类型为Serializable的方法.
+
+      ```java
+      args(java.io.Serializable)
+      ```
+
+   9. 任何切面方法的目标对象使用了@Transactional注解
+
+      ```java
+      @target(org.springframework.transaction.annotation.Transactional)
+      ```
+
+   10. 任何切面方法目标对象的生命类型使用了@Transactional注解
+
+       ```java
+       @within(org.springframework.transaction.annotation.Transactional)
+       ```
+
+   11. 任何切面方法执行的方法使用了@Transactional注解
+
+       ```java
+       @annotation(org.springframework.transaction.annotation.Transactional)
+       ```
+
+   12. 任何切面方法有单个参数,并且运行时候类型有@Classified注解
+
+       ```java
+        @args(com.xyz.security.Classified)
+       ```
+
+   13. 任何切面方法有一个Bean叫做tradeService
+
+       ```java
+        bean(tradeService)
+       ```
+
+   14. 任何切面方法有一个Bean名称匹配*Service
+
+       ```java
+       bean(*Service)
+       ```
+
+6. 切点的原则是定位范围尽量的窄.写好一个切点必须包含Kinded 和Scoping 
+
+   1. Kinded designators select a particular kind of join point: `execution`, `get`, `set`, `call`, and `handler`.
+   2. Scoping designators select a group of join points of interest (probably of many kinds): `within` and `withincode`
+   3. Contextual designators match (and optionally bind) based on context: `this`, `target`, and `@annotation`
+
 
 
 
