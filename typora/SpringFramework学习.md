@@ -2262,6 +2262,235 @@ public class AppConfig {
    2. Scoping designators select a group of join points of interest (probably of many kinds): `within` and `withincode`
    3. Contextual designators match (and optionally bind) based on context: `this`, `target`, and `@annotation`
 
+### 定义一个通知
+
+#### 定义
+
+通知与切入点表达式相关联，并在切入点匹配的方法执行之前、之后或前后运行。
+
+#### 前置通知
+
+1. ~~~java
+   import org.aspectj.lang.annotation.Aspect;
+   import org.aspectj.lang.annotation.Before;
+   
+   @Aspect
+   public class BeforeExample {
+   
+       @Before("com.xyz.myapp.CommonPointcuts.dataAccessOperation()")
+       public void doAccessCheck() {
+           // ...
+       }
+   }
+   // 换成另一种切点的表达 两种等价
+   import org.aspectj.lang.annotation.Aspect;
+   import org.aspectj.lang.annotation.Before;
+   
+   @Aspect
+   public class BeforeExample {
+   
+       @Before("execution(* com.xyz.myapp.dao.*.*(..))")
+       public void doAccessCheck() {
+           // ...
+       }
+   }
+   ~~~
+
+#### After Returning Advice
+
+1. 当匹配的方法正常执行有返回值时候执行
+
+   1. 
+
+   ~~~java
+   import org.aspectj.lang.annotation.Aspect;
+   import org.aspectj.lang.annotation.AfterReturning;
+   
+   @Aspect
+   public class AfterReturningExample {
+   
+       @AfterReturning("com.xyz.myapp.CommonPointcuts.dataAccessOperation()")
+       public void doAccessCheck() {
+           // ...
+       }
+   }
+   ~~~
+
+2. 可以通过返回值确定方法的执行,但是返回值需要与对应方法返回值类型匹配.
+
+   1. ~~~java
+      import org.aspectj.lang.annotation.Aspect;
+      import org.aspectj.lang.annotation.AfterReturning;
+      
+      @Aspect
+      public class AfterReturningExample {
+      
+          @AfterReturning(
+              pointcut="com.xyz.myapp.CommonPointcuts.dataAccessOperation()",
+              returning="retVal")
+          public void doAccessCheck(Object retVal) {
+              // ...
+          }
+      }
+      ~~~
+
+#### After Throwing Advice
+
+1. 当匹配的方法正常执行并抛出异常的时候执行
+
+   1. ~~~java
+      import org.aspectj.lang.annotation.Aspect;
+      import org.aspectj.lang.annotation.AfterThrowing;
+      
+      @Aspect
+      public class AfterThrowingExample {
+      
+          @AfterThrowing("com.xyz.myapp.CommonPointcuts.dataAccessOperation()")
+          public void doRecoveryActions() {
+              // ...
+          }
+      }
+      ~~~
+
+2. 可以通过定义方法返回的参数判断执行
+
+   1. ~~~java
+      @Aspect
+      public class AfterThrowingExample {
+      
+          @AfterThrowing(
+              pointcut="com.xyz.myapp.CommonPointcuts.dataAccessOperation()",
+              throwing="ex")
+          public void doRecoveryActions(DataAccessException ex) {
+              // ...
+          }
+      }
+      ~~~
+
+   2. 返回值参数的名称必须是ex
+
+#### After (Finally) Advice
+
+1. 只要匹配的方法执行了(不管是否有返回值返回)就执行,必须考虑匹配的方法是正常执行还是异常.
+
+   1. ~~~java
+      import org.aspectj.lang.annotation.Aspect;
+      import org.aspectj.lang.annotation.After;
+      
+      @Aspect
+      public class AfterFinallyExample {
+      
+          @After("com.xyz.myapp.CommonPointcuts.dataAccessOperation()")
+          public void doReleaseLock() {
+              // ...
+          }
+      }
+      ~~~
+
+   2. @After是只有匹配的方法有返回值才执行.
+
+#### Around Advice
+
+1. ~~~java
+   import org.aspectj.lang.annotation.Aspect;
+   import org.aspectj.lang.annotation.Around;
+   import org.aspectj.lang.ProceedingJoinPoint;
+   
+   @Aspect
+   public class AroundExample {
+   
+       @Around("com.xyz.myapp.CommonPointcuts.businessService()")
+       public Object doBasicProfiling(ProceedingJoinPoint pjp) throws Throwable {
+           // start stopwatch
+           Object retVal = pjp.proceed();
+           // stop stopwatch
+           return retVal;
+       }
+   }
+   ~~~
+
+#### 通知的参数
+
+1. 也可以根据方法的参数匹配决定是否执行通知
+
+   1. ~~~java
+      @Pointcut("com.xyz.myapp.CommonPointcuts.dataAccessOperation() && args(account,..)")
+      private void accountDataAccessOperation(Account account) {}
+      
+      @Before("accountDataAccessOperation(account)")
+      public void validateAccount(Account account) {
+          // ...
+      }
+      ~~~
+
+2. 复杂条件的通知
+
+   1. ~~~java
+      @Before(value="com.xyz.lib.Pointcuts.anyPublicMethod() && target(bean) && @annotation(auditable)",
+              argNames="bean,auditable")
+      public void audit(JoinPoint jp, Object bean, Auditable auditable) {
+          AuditCode code = auditable.value();
+          // ... use code, bean, and jp
+      }
+      ~~~
+
+#### 通知的优先级
+
+1. 可以通过@Order定义@Aspect顺序.
+2. Spring Framework 5.2.7之后相同条件先通知的执行的顺序是:@Around`, `@Before`, `@After`, `@AfterReturning`, `@AfterThrowing.
+
+#### 说明(Introductions)
+
+1. 可以定义执行的条件是通知的对象实现哪些接口或者直接定义依赖对象.
+
+2. 可以使用@DeclareParents
+
+   1. ~~~java
+      @Aspect
+      public class UsageTracking {
+      
+          @DeclareParents(value="com.xzy.myapp.service.*+", defaultImpl=DefaultUsageTracked.class)
+          public static UsageTracked mixin;
+      
+          @Before("com.xyz.myapp.CommonPointcuts.businessService() && this(usageTracked)")
+          public void recordUsage(UsageTracked usageTracked) {
+              usageTracked.incrementUseCount();
+          }
+      
+      }
+      ~~~
+
+### 以xml方式定义一个通知
+
+1. 与注解方式相对应 详见官网.
+
+## 选择AOP的声明风格
+
+如果通知是在Spring Bean上执行,Spring AOP是一个较好的选择,如果影响的是容器,使用AspectJ更好.
+
+决定使用Spring AOP ,选择xml还是@AspectJ:一般作为服务配置一部分时,使用xml的方式会更好,xml不与代码融合独立的优势返回出来,当最为单元方法,@Aspect更好一些.
+
+## 代理机制
+
+### 定义
+
+​	动态代理分为JDK代理和CGLIB代理,JDK代理是基于接口的,而CGLib是基于父类的.CGlib不能代理final修饰的方法.
+
+​    如果非要使用CGLIB代理,需要配置开启
+
+~~~xml
+<aop:config proxy-target-class="true">
+    <!-- other beans defined here... -->
+</aop:config>
+~~~
+
+### 理解代理
+
+1. 生成代理对象去执行对应的方法,但是当调用this.method()时候,会直接由对象本体执行而不是代理执行.但需要尽量避免.
+2. 
+
+
+
 
 
 
