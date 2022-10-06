@@ -2487,7 +2487,240 @@ public class AppConfig {
 ### 理解代理
 
 1. 生成代理对象去执行对应的方法,但是当调用this.method()时候,会直接由对象本体执行而不是代理执行.但需要尽量避免.
-2. 
+
+# 6.Spring AOP APIs
+
+## Spring 中的Pointcut API
+
+### 概念
+
+1. Pointcut接口
+
+   ~~~java
+   public interface Pointcut {
+   
+       ClassFilter getClassFilter();
+   
+       MethodMatcher getMethodMatcher();
+   }
+   ~~~
+
+2. ClassFilter是否符合切点定义的一系列Class
+
+   1. ~~~java
+      public interface ClassFilter {
+      
+          boolean matches(Class clazz);
+      }
+      ~~~
+
+3. MethodMatcher  更加的重要
+
+   ~~~java
+   public interface MethodMatcher {
+   	// 匹配切点的目标对象的类型 避免每个方法都进行验证
+       boolean matches(Method m, Class<?> targetClass);
+   	// 是否在运行
+       boolean isRuntime();
+   	// 方法的参数匹配 验证每个方法
+       boolean matches(Method m, Class<?> targetClass, Object... args);
+   }
+   ~~~
+
+## Spring通知的API
+
+### 重写通知
+
+1. 可以自定义循环,前置,后置通知等
+
+   1. 循环通知  实现 MethodInterceptor 
+   2. 前置通知  实现BeforeAdvice 
+   3. 异常通知 实现ThrowsAdvice 
+   4. After Return通知 实现AfterReturningAdvice 
+
+2. 代码
+
+   1. ~~~java
+      public interface MethodInterceptor extends Interceptor {
+      
+          Object invoke(MethodInvocation invocation) throws Throwable;
+      }
+      
+      
+      public class DebugInterceptor implements MethodInterceptor {
+      
+          public Object invoke(MethodInvocation invocation) throws Throwable {
+              System.out.println("Before: invocation=[" + invocation + "]");
+              Object rval = invocation.proceed();
+              System.out.println("Invocation returned");
+              return rval;
+          }
+      }
+      ~~~
+
+## Spring 通知者(Advisor)的API
+
+### 使用`ProxyFactoryBean`创建AOP Proxies
+
+​	向FactoryBean一样,Spring支持这种代理并管理生成代理的生命周期
+
+### 代理Bean的属性
+
+1. 继承ProxyConfig类
+
+~~~java
+package org.springframework.aop.framework;
+
+import java.io.Serializable;
+import org.springframework.util.Assert;
+
+public class ProxyConfig implements Serializable {
+    private static final long serialVersionUID = -8409359707199703185L;
+    private boolean proxyTargetClass = false;
+    private boolean optimize = false;
+    boolean opaque = false;
+    boolean exposeProxy = false;
+    private boolean frozen = false;
+
+~~~
+
+2. 重要属性介绍
+   1. proxyTargetClass: 如果设置成true使用CGLIB代理.
+   2. optimize: 控制是否对通过CGLIB创建的代理应用积极优化,一般不适用值针对CGLIB生效
+   3. frozen:如果代理配置被冻结，则不再允许对该配置进行更改。
+   4. exposeProxy:是否将代理暴露给ThreadLocal
+
+### 	代理生成
+
+1. 如果对象实现了接口,则使用jdk,如果没有实现接口才会使用CGLIB生成代理,即使proxyTargetClass设置成了false.如果设置成为了ture,则使用CGLIB生成代理.
+
+2. 配置personTarget的代理
+
+   1. ~~~xml
+      <bean id="personTarget" class="com.mycompany.PersonImpl">
+          <property name="name" value="Tony"/>
+          <property name="age" value="51"/>
+      </bean>
+      
+      <bean id="myAdvisor" class="com.mycompany.MyAdvisor">
+          <property name="someProperty" value="Custom string property value"/>
+      </bean>
+      
+      <bean id="debugInterceptor" class="org.springframework.aop.interceptor.DebugInterceptor">
+      </bean>
+      
+      <bean id="person"
+          class="org.springframework.aop.framework.ProxyFactoryBean">
+          <property name="proxyInterfaces" value="com.mycompany.Person"/>
+      
+          <property name="target" ref="personTarget"/>
+          <property name="interceptorNames">
+              <list>
+                  <value>myAdvisor</value>
+                  <value>debugInterceptor</value>
+              </list>
+          </property>
+      </bean>
+      ~~~
+
+   2. ~~~java
+      // 获取代理对象
+      Person person = (Person) factory.getBean("person");
+      ~~~
+
+   3. 可以通过匿名内部类隐藏代理和目标的区别.只有一种类型的Person避免了混淆.
+
+
+## 简洁代理
+
+### 继承父类 重写代理的方法
+
+1. ~~~xml
+   <bean id="txProxyTemplate" abstract="true"
+           class="org.springframework.transaction.interceptor.TransactionProxyFactoryBean">
+       <property name="transactionManager" ref="transactionManager"/>
+       <property name="transactionAttributes">
+           <props>
+               <prop key="*">PROPAGATION_REQUIRED</prop>
+           </props>
+       </property>
+   </bean>
+   ~~~
+
+2. ~~~xml
+   <bean id="mySpecialService" parent="txProxyTemplate">
+       <property name="target">
+           <bean class="org.springframework.samples.MySpecialServiceImpl">
+           </bean>
+       </property>
+       <property name="transactionAttributes">
+           <props>
+               <prop key="get*">PROPAGATION_REQUIRED,readOnly</prop>
+               <prop key="find*">PROPAGATION_REQUIRED,readOnly</prop>
+               <prop key="load*">PROPAGATION_REQUIRED,readOnly</prop>
+               <prop key="store*">PROPAGATION_REQUIRED</prop>
+           </props>
+       </property>
+   </bean>
+   ~~~
+
+## 通过`ProxyFactory`生成代理
+
+### 目的
+
+​	在不依赖Spring IOC使用Spring AOP.但是不推荐这种使用方式.
+
+~~~java
+ProxyFactory factory = new ProxyFactory(myBusinessInterfaceImpl);
+factory.addAdvice(myMethodInterceptor);
+factory.addAdvisor(myAdvisor);
+MyBusinessInterface tb = (MyBusinessInterface) factory.getProxy();
+~~~
+
+## 操作Adviced 对象
+
+通过org.springframework.aop.framework.Advised接口实现.
+
+~~~java
+Advisor[] getAdvisors();
+
+void addAdvice(Advice advice) throws AopConfigException;
+
+void addAdvice(int pos, Advice advice) throws AopConfigException;
+
+void addAdvisor(Advisor advisor) throws AopConfigException;
+
+void addAdvisor(int pos, Advisor advisor) throws AopConfigException;
+
+int indexOf(Advisor advisor);
+
+boolean removeAdvisor(Advisor advisor) throws AopConfigException;
+
+void removeAdvisor(int index) throws AopConfigException;
+
+boolean replaceAdvisor(Advisor a, Advisor b) throws AopConfigException;
+
+boolean isFrozen();
+~~~
+
+## TargetSource
+
+### 定义
+
+​	此接口返回所有与切点有关的target对象.
+
+### 常用的TargetSource
+
+1. Hot-swappable Target Sources
+   1. 通过org.springframework.aop.target.HotSwappableTargetSource实现,存在的目的是允许切换AOP代理的目标，同时让调用者保留对它的引用。
+2. Pooling Target Sources
+3. Prototype Target Sources
+4. ThreadLocal Target Sources
+   1. 如果想为每次请求创建一个对象,使用ThreadLocal Target Source
+
+
+
+
 
 
 
