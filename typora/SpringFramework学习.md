@@ -2713,12 +2713,19 @@ boolean isFrozen();
 
 1. Hot-swappable Target Sources
    1. 通过org.springframework.aop.target.HotSwappableTargetSource实现,存在的目的是允许切换AOP代理的目标，同时让调用者保留对它的引用。
+   
 2. Pooling Target Sources
+
 3. Prototype Target Sources
+
 4. ThreadLocal Target Sources
    1. 如果想为每次请求创建一个对象,使用ThreadLocal Target Source
-
-
+   
+   2. ~~~xml
+      <bean id="threadlocalTargetSource" class="org.springframework.aop.target.ThreadLocalTargetSource">
+          <property name="targetBeanName" value="businessObjectTarget"/>
+      </bean>
+      ~~~
 
 
 
