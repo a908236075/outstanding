@@ -24,6 +24,8 @@
    sudo iptables -t nat -vnL DOCKER --line-number
    #端口映射 10902--->10902
    sudo iptables -t nat -A  DOCKER -p tcp --dport 10902 -j DNAT --to-destination 172.17.0.2:10902
+   #删除规则 3
+   sudo iptables -t nat -D DOCKER 3
    ~~~
 
 2. docker 拷贝文件

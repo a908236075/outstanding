@@ -41,18 +41,19 @@
    - ~~~shell
      #查看所有可用的主题
      ./bin/kafka-topics.sh --zookeeper localhost:2181/kafka -list
+     ./bin/kafka-topics.sh --zookeeper localhost:2181 -list
      ~~~
-
+     
    - ~~~shell
      #--topic 指定多个主题 显示主题的信息
      ./bin/kafka-topics.sh --zookeeper localhost:2181/kafka --describe --topic demo 
      ~~~
-
+   
    - ~~~shell
      # under-replicated-partitions找出所有包含失效副本的分区
      ./bin/kafka-topics.sh --zookeeper localhost:2181/kafka --describe --topic demo --under-replicated-partitions
      ~~~
-
+   
    - ~~~shell
      # --unavailable-partitions 查看主题中没有leader副本的分区
      ./kafka-topics.sh --zookeeper localhost:2181 --describe --topic topic-demo --unavailable-partitions
