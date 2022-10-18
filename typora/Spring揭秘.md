@@ -1,137 +1,142 @@
 # Spring揭秘
 
-### 第一章Spring框架总体结构
+## 第一章Spring框架总体结构
 
 1. IOC容器,AOP, DAO JDBC和事物管理,ORM Mybatis,SpringMVC.
 2. ![image-20201209100946514](.\picture\spring揭秘\image-20201209100946514.png)
 
-### 第二章 IOC的基本概念
+## 第二章 IOC的基本概念
 
-1. IOC:控制反转,由IOC Service Provider统一管理,将被依赖的对象注入到注入对象中.
+### IOC:控制反转
 
-2. Bean注入方式
+1. 由IOC Service Provider统一管理,将被依赖的对象注入到注入对象中.
 
-   - 构造方法注入:
+### Bean注入方式
 
-     - ![image-20201209134452067](.\picture\spring揭秘\image-20201209134452067.png)
-     - 好处是随着对象一起创建.缺点是当依赖对象比较多的时候,参数会比较长.通过反射构造对象的时候,对相同类型的参数处理比较困难.构造方法无法被继承,无法设置默认值.参数数量的变动可能会引起维护上面的不变.
+#### 构造方法注入:
 
-     ```xml
-     <bean id="personDao" class="com.fredia.service.impl.PersonDaoBean"></bean >  
-     <!--构造器方式注入-->  
-     <bean id="personService" class="com.fredia.service.impl.PersonServiceBean">  
-         <constructor-arg index="0" type="cn.glzaction.service.impl.PersonDaoBean" ref="personDao"/>  
-         <constructor-arg index="1" type="java.lang.String" value="glzaction"/>  
-         <constructor-arg index="2" type="java.util.List">  
-             <list>  
-                 <value>list1</value>  
-                 <value>list2</value>  
-                 <value>list3</value>  
-             </list>  
-         </constructor-arg>  
-     </bean>  
-     
-     ```
+- ![image-20201209134452067](.\picture\spring揭秘\image-20201209134452067.png)
+- 好处是随着对象一起创建.缺点是当依赖对象比较多的时候,参数会比较长.通过反射构造对象的时候,对相同类型的参数处理比较困难.构造方法无法被继承,无法设置默认值.参数数量的变动可能会引起维护上面的不变.
 
-   - Set方法注入
+```xml
+<bean id="personDao" class="com.fredia.service.impl.PersonDaoBean"></bean >  
+<!--构造器方式注入-->  
+<bean id="personService" class="com.fredia.service.impl.PersonServiceBean">  
+    <constructor-arg index="0" type="cn.glzaction.service.impl.PersonDaoBean" ref="personDao"/>  
+    <constructor-arg index="1" type="java.lang.String" value="glzaction"/>  
+    <constructor-arg index="2" type="java.util.List">  
+        <list>  
+            <value>list1</value>  
+            <value>list2</value>  
+            <value>list3</value>  
+        </list>  
+    </constructor-arg>  
+</bean>  
 
-     - ![image-20201209134553435](.\picture\spring揭秘\image-20201209134553435.png)
+```
 
-     - 应为set方法可以命名,会比构造方法好一些,setter方法可以别继承,可以设置默认值,缺点是无法再构造完成后马上进入就绪的状态.
+#### Set方法注入
 
-     - ```xml
-       <bean id="personDao" class="com.fredia.service.impl.PersonDaoBean">  
-           <property name="name" type="java.lang.String" value="glzaction"/>  
-           <property name="id" type="java.lang.Integer" value="1"/>  
-           <property name="list" type="java.util.List">  
-               <list>  
-                   <value>list1</value>  
-                   <value>list2</value>  
-                   <value>list3</value>  
-               </list>  
-           </property>  
-           <property name="map" type="java.util.Map">  
-               <map>  
-                   <entry key="key1" value="value1"></entry>  
-                   <entry key="key2" value="value2"></entry>  
-               </map>  
-           </property>  
-       </bean>  
-       ```
+- ![image-20201209134553435](.\picture\spring揭秘\image-20201209134553435.png)
 
-   - 接口的注入:不推荐使用,通过实现响应的接口来实现注入.
+- 应为set方法可以命名,会比构造方法好一些,setter方法可以别继承,可以设置默认值,缺点是无法再构造完成后马上进入就绪的状态.初始化必须依赖的类使用构造方法注入,可选择的类使用set方法注入,有时候用set方法注入解决循环依赖的问题.
 
-3. 对IOC真正的理解
+- ```xml
+  <bean id="personDao" class="com.fredia.service.impl.PersonDaoBean">  
+      <property name="name" type="java.lang.String" value="glzaction"/>  
+      <property name="id" type="java.lang.Integer" value="1"/>  
+      <property name="list" type="java.util.List">  
+          <list>  
+              <value>list1</value>  
+              <value>list2</value>  
+              <value>list3</value>  
+          </list>  
+      </property>  
+      <property name="map" type="java.util.Map">  
+          <map>  
+              <entry key="key1" value="value1"></entry>  
+              <entry key="key2" value="value2"></entry>  
+          </map>  
+      </property>  
+  </bean>  
+  ```
 
-   1. spring是单例模式的,如果没有IOC,每一个都要编写单例的方法.
-   2. 对于Bean的**依赖管理**,如果类A依赖B,C,D类,不需要一个一个的new这样耦合在代码的方式,通过IOC可以实现Bean的管理和解耦.
+- 接口的注入:不推荐使用,通过实现响应的接口来实现注入.
 
-4. Autowired注解相当于在xml中写了一个constructarg或者property(看它放的位置),Autowired注入成员变量(写在类名上)，利用set方法注入，要等类加载完了才注入bean.
+### 对IOC真正的理解
 
-   Autowired注入构造方法中，利用构造器注入，有先后依赖关系.
+1. spring是单例模式的,如果没有IOC,每一个都要编写单例的方法.
+2. 对于Bean的**依赖管理**,如果类A依赖B,C,D类,不需要一个一个的new这样耦合在代码的方式,通过IOC可以实现Bean的管理和解耦.
 
-   setter方法注入，setter代码冗长，不能将属性设置为final。
+### Autowired注解
 
-5. IOC Service Provider
+1. 相当于在xml中写了一个constructarg或者property(看它放的位置),Autowired注入成员变量(写在类名上)，利用set方法注入，要等类加载完了才注入bean.
 
-   - 业务对象的构建管理
-   - 业务对象之间的依赖绑定
-     - 直接编码的方式:在容器中直接用代码管理关系.所有方式的最终方式.
-       - ![image-20201209145322335](.\picture\spring揭秘\image-20201209145322335.png)
-     - 配置文件的方式,xml的方式最常见.
-     - 注解的方式,其实注最终还是编码的方式来确定注入的关系.
+2. Autowired注入构造方法中，利用构造器注入，有先后依赖关系.
 
-### 第四章 Spring的IOC容器之BeanFactory
+3. setter方法注入，setter代码冗长，不能将属性设置为final。
 
-1. spring Ioc容器和Ioc provider的关系
+### IOC Service Provider
 
-   ![image-20201209151641139](.\picture\spring揭秘\image-20201209151641139.png)
+1. 业务对象的构建管理
+2. 业务对象之间的依赖绑定
+  1. **直接编码的方式**:在容器中直接用代码管理关系.所有方式的最终方式.
+    - ![image-20201209145322335](.\picture\spring揭秘\image-20201209145322335.png)
+    - 通过代码可以看到先注册了两个类,等需要之前注册过的类,直接从容器中获取.
+  2. **配置文件的方式**,xml的方式最常见.
+  3. **注解的方式**,其实注最终还是编码的方式来确定注入的关系.
 
-2. spring提供了两种容器类型:BeanFactory和ApplicationContext
+## 第四章 Spring的IOC容器之BeanFactory
 
-   - BeanFactory:基础类型IOC容器,提供完整的Ioc服务支持.默认采用延迟初始化策略(懒加载).启动时间快,需要的系统资源少.
-   - ApplicationContext:在BeanFactory上构建,;对其进行了功能上的升级,比如事件发布,国际化信息支持等.默认启动时完成所有初始化,需要更多的系统资源.
-   - ![image-20201209152151032](.\picture\spring揭秘\image-20201209152151032.png)
+### spring Ioc容器和Ioc provider的关系
 
-3. BeanFactory,BeanDefinitionRegister以及DefaultListtableBeanFactory的关系.
+![image-20201209151641139](.\picture\spring揭秘\image-20201209151641139.png)
 
-   1. BeanFactory 只是一个接口，我们最终需要一个该接口的实现来进行实际的Bean的管理， Default-
-      ListableBeanFactory 就是这么一个比较通用的 BeanFactory 实现类。 DefaultListableBean-
-      Factory 除了间接地实现了 BeanFactory 接口，还实现了 BeanDefinitionRegistry 接口，该接口才
-      是在 BeanFactory 的实现中担当Bean注册管理的角色。基本上， BeanFactory 接口只定义如何访问容
-      器内管理的Bean的方法，各个 BeanFactory 的具体实现类负责具体Bean的注册以及管理工作。
-      BeanDefinitionRegistry 接口定义抽象了Bean的注册逻辑。通常情况下，具体的 BeanFactory 实现
-      类会实现这个接口来管理Bean的注册。它们之间的关系如图4-3所示
+### spring提供了两种容器类型:BeanFactory和ApplicationContext
 
-   ![image-20201209160039061](.\picture\spring揭秘\image-20201209160039061.png)
+- BeanFactory:基础类型IOC容器,提供完整的Ioc服务支持.默认采用**延迟初始化策略(懒加载)**.启动时间快,需要的系统资源少.
+- ApplicationContext:在BeanFactory上构建,;对其进行了功能上的升级,比如事件发布,国际化信息支持等**.默认启动时完成所有初始化**,需要更多的系统资源.
+- ![image-20201209152151032](.\picture\spring揭秘\image-20201209152151032.png)
 
-4. BeanFactory的对象注册与依赖绑定方式
+### BeanFactory,BeanDefinitionRegister以及DefaultListtableBeanFactory的关系
 
-   - 直接编码的方式:BeanDefinitionRegistry接口定义Bean的注册逻辑.每一个受管理的对象在容器中都会有一个BeanDefinition(instance)的实例与之相对应.
-   - 外部配置文件方式
-     - 一般用BeanDefinitionReader来读取配置文件.
-     - properties
-     - xml    **spring读取xml配置文件的过程?**
-       -  set方法,构造函数方法,
-       -  list,set,map 复杂数据结构的封装.各种标签的介绍.
-       -  byName和byType自动绑定,不用我们手写class类,省去了一些代码量,但是类型唯一时候才能保证成功.
-       -  lazy-init 主要针对application容器设置延时初始化.
-   - 注解方式.注解注入其实是使用注解的方式进行构造器注入或者set注入。使用哪种方式注入,通过位置来判断,如果@autowired在构造方法上就是使用了构造器注入的.**这里需要区分Bean注入的方式和Bean注册方式的区别.**注解的方式其实是Bean注册方式的一种.注册是管理的类之前的关系,注入关注的是类的生成.
-     - Bean的scope
-       - 单例 与IOC容器拥有相同的寿命.
-       - 多例  容器为每次请求创建一个对象 ,随后不在管理他的生命周期.
-       - request,session,global session:request是多例的一个特例,只是拥有了具体的使用场景.
-     - FactoryBean本质上一个Bean,只不过这种类型的bean本身,就是生产对象的工厂.不要与BeanFactory相混淆.
+1. BeanFactory 只是一个接口，我们最终需要一个该接口的实现来进行实际的Bean的管理， Default-
+   ListableBeanFactory 就是这么一个比较通用的 BeanFactory 实现类。 DefaultListableBean-
+   Factory 除了间接地实现了 BeanFactory 接口，还实现了 BeanDefinitionRegistry 接口，该接口才
+   是在 BeanFactory 的实现中担当Bean注册管理的角色。基本上， BeanFactory 接口只定义如何访问容
+   器内管理的Bean的方法，各个 BeanFactory 的具体实现类负责具体Bean的注册以及管理工作。
+   BeanDefinitionRegistry 接口定义抽象了Bean的注册逻辑。通常情况下，具体的 BeanFactory 实现
+   类会实现这个接口来管理Bean的注册。它们之间的关系如图4-3所示
 
-5. Bean的Scope:配置中的Bean可以看多是模板,容器会根据他们构造对象,的说那是要创建多少个,构造完成后对象实例存活多久,则是由容器根据Bean的scope语义来决定的.
+![image-20201209160039061](.\picture\spring揭秘\image-20201209160039061.png)
 
-6. 注意:GOF的单例模式和spring的Singleton模式是不同的,标记为Singleton的bean是由容器来保证这类的bean在同一个容器中只存在一个共享实例;Singleton模式则是保证同一个ClassLoader中只存在一个这种类型的实例.而设计模式中，我们是对构造方法私有化，进行单例模式，用户从而不能new多个实例。
+### BeanFactory的对象注册与依赖绑定方式
 
-7. 单例:容器中只存在一个共享的实例.存活时间:从容器启动,到它第一次被请求实例化开始,只要是容器不销毁或者退出,改Bean就会一直存活.多例:每次请求都会创建一个全新的对象,只负责创建,后期的对象的生命周期由请求方来维护.
+- 直接编码的方式:BeanDefinitionRegistry接口定义Bean的注册逻辑.每一个受管理的对象在容器中都会有一个BeanDefinition(instance)的实例与之相对应.
+- 外部配置文件方式
+  - 一般用BeanDefinitionReader来读取配置文件.
+  - properties
+  - xml    **spring读取xml配置文件的过程?**
+    -  set方法,构造函数方法,
+    -  list,set,map 复杂数据结构的封装.各种标签的介绍.
+    -  byName和byType自动绑定,不用我们手写class类,省去了一些代码量,但是类型唯一时候才能保证成功.
+    -  lazy-init 主要针对application容器设置延时初始化.
+- 注解方式.注解注入其实是使用注解的方式进行构造器注入或者set注入。使用哪种方式注入,通过位置来判断,如果@autowired在构造方法上就是使用了构造器注入的.**这里需要区分Bean注入的方式和Bean注册方式的区别.**注解的方式其实是Bean注册方式的一种.注册是管理的类之前的关系,注入关注的是类的生成.
+  - Bean的scope
+    - 单例 与IOC容器拥有相同的寿命.
+    - 多例  容器为每次请求创建一个对象 ,随后不在管理他的生命周期.
+    - request,session,global session:request是多例的一个特例,只是拥有了具体的使用场景.
+  - FactoryBean本质上一个Bean,只不过这种类型的bean本身,就是生产对象的工厂.不要与BeanFactory相混淆.
 
-8. request,session,global session只适用于web应用程序.
+1. Bean的Scope:配置中的Bean可以看多是模板,容器会根据他们构造对象,的说那是要创建多少个,构造完成后对象实例存活多久,则是由容器根据Bean的scope语义来决定的.
 
-9. 小心prototype(多例的陷阱),有时候即使我们配置了多例,但是程序取对象的时候只取同一个对象,这是因为引用不当,每次请求没有向IOC的容器中获取对象,解决方法如下:
+2. 注意:GOF的单例模式和spring的Singleton模式是不同的,标记为Singleton的bean是由容器来保证这类的bean在同一个容器中只存在一个共享实例;Singleton模式则是保证同一个ClassLoader中只存在一个这种类型的实例.而设计模式中，我们是对构造方法私有化，进行单例模式，用户从而不能new多个实例。
+
+3. 单例:容器中只存在一个共享的实例.存活时间:从容器启动,到它第一次被请求实例化开始,只要是容器不销毁或者退出,改Bean就会一直存活.多例:每次请求都会创建一个全新的对象,只负责创建,后期的对象的生命周期由请求方来维护.
+
+4. request,session,global session只适用于web应用程序.
+
+5. 小心prototype(多例的陷阱),有时候即使我们配置了多例,但是程序取对象的时候只取同一个对象,这是因为引用不当,每次请求没有向IOC的容器中获取对象,解决方法如下:
 
    1. 需要配置lookup-method方法注入的方式.
 
@@ -144,41 +149,41 @@
    2. 使用BeanFactoryAware接口
    3. 方法替换.**???**
 
-10. **FactoryBean和BeanFactory的区别**:FactoryBean本质是一个bean,是Spring容器提供的一种可以扩展容器对象实例化逻辑的接口.
+6. **FactoryBean和BeanFactory的区别**:FactoryBean本质是一个bean,是Spring容器提供的一种可以扩展容器对象实例化逻辑的接口.
 
-11. Spring的IOC容器
+7. Spring的IOC容器
 
-    1. **容器的启动阶段**
+   1. **容器的启动阶段**
 
-       ​		通过BeanDefinitionReader对加载的Configuration进行解析和分析,并把信息编为BeanDefinition,然后将所有的BeanDefinition注册到相应的BeanDefinitionRegistry中.侧重于对象管理信息的收集.
+      ​		通过BeanDefinitionReader对加载的Configuration进行解析和分析,并把信息编为BeanDefinition,然后将所有的BeanDefinition注册到相应的BeanDefinitionRegistry中.侧重于对象管理信息的收集.
 
-    2. **Bean的实例化阶段**
+   2. **Bean的实例化阶段**
 
-       ​		当某个请求通过容器的getBean方法(或隐士的调用)明确的请求某个对象的时候,根据BeanDefinitionRegistry实例化Bean,注入依赖.
+      ​		当某个请求通过容器的getBean方法(或隐士的调用)明确的请求某个对象的时候,根据BeanDefinitionRegistry实例化Bean,注入依赖.
 
-12. 容器启动时候的扩展
+8. 容器启动时候的扩展
 
-    - BeanFactoryPostProcess的容器扩展机制.允许容器实例化之前(继在容器启动的最后时刻),对注册到容器BeanDefinition所保存的信息做相应的修改.例如修改Bean定义的某些属性,为Bean定义添加其他的信息等.最常见的例子就是数据库的用户名和密码.
-    - PropertyPlaceholderConfigurer,PropertyOverrideConfigurer和CustomEditorConfigure
+   - BeanFactoryPostProcess的容器扩展机制.允许容器实例化之前(继在容器启动的最后时刻),对注册到容器BeanDefinition所保存的信息做相应的修改.例如修改Bean定义的某些属性,为Bean定义添加其他的信息等.最常见的例子就是数据库的用户名和密码.
+   - PropertyPlaceholderConfigurer,PropertyOverrideConfigurer和CustomEditorConfigure
 
-13. Bean的实例化阶段
+9. Bean的实例化阶段
 
-    1. ![image-20201210162931583](.\picture\spring揭秘\image-20201210162931583.png)
-    2. 对于BeanFactory使用的是Bean的懒加载策略,只到A被请求bean或者间接请求,间接是指有依赖到Bean时候.
-    3. 虽然是通过BeanDefinition取得实例化信息,通过反射就能创建对象实例,但是并不是直接返回的对象实例,而是BeanWrapper对构造完成的对象实例进行包裹.返回相应的BeanWrapper.进行包裹为的就是第二步设置对象属性.
-    4. BeanWarpperImpl实现类作用是对每个Bean实现包裹,设置或者获取Bean的属性,BeanWarpperImpl间接继承了PropertyEditorRegitry,会将注册信息传递给wrapper.
+   1. ![image-20201210162931583](.\picture\spring揭秘\image-20201210162931583.png)
+   2. 对于BeanFactory使用的是Bean的懒加载策略,只到A被请求bean或者间接请求,间接是指有依赖到Bean时候.
+   3. 虽然是通过BeanDefinition取得实例化信息,通过反射就能创建对象实例,但是并不是直接返回的对象实例,而是BeanWrapper对构造完成的对象实例进行包裹.返回相应的BeanWrapper.进行包裹为的就是第二步设置对象属性.
+   4. BeanWarpperImpl实现类作用是对每个Bean实现包裹,设置或者获取Bean的属性,BeanWarpperImpl间接继承了PropertyEditorRegitry,会将注册信息传递给wrapper.
 
-14. BeanPostProcessor
+10. BeanPostProcessor
 
     1. 存在于对象实例化阶段,注意与BeanFactoryPostProcess则是存在于容器的启动阶段.与BeanFactoryPostProcess管理BeanDefinition类似的是,BeanPostProcessor管理的实例化后的对象.
     2. 各种aware接口就是在这postProcessBeforeInitialization处理的.
     3. Spring的AOP功能就是用BeanPostProcess来为对象生成相应的**代理对象**.
 
-15. 自定义BeanPostProcess
+11. 自定义BeanPostProcess
 
-   16. 实现BeanPostProcessor接口,重写BeforeInitialization
+   12. 实现BeanPostProcessor接口,重写BeforeInitialization
 
-   17. 将自定义的processor注册到容器.
+   13. 将自定义的processor注册到容器.
 
        - 对于BeanFactory使用configurableBeanFactory.addBeanProcessor方法
        - 对于Application则作为一个Bean配置在xml中就可以了.
@@ -191,7 +196,7 @@
     1. BeanFactory容器  调用ConfigurableBeanFactory提供的destroySingletons()的方法.
     2. ApplicationContext容器  调用registerShutdownHook方法.
 
-### 第五章 ApplicationContext容器
+## 第五章 ApplicationContext容器
 
 1. Resource和ResourceLoader
 2. 国际化信息的支持.
@@ -200,7 +205,7 @@
 4. 容器内事件的发布,其实使用的是时间的监听机制.
 5. 对配置模块加载的简化.
 
-### 第六章 注解
+第六章 注解
 
 1. @Autowired :与在xml中定义autowire="bytype",按照类型进行注入,可以定义在方法和属性上面.定义子构造方法上就是通过构造方法注入的,定义在属性上就是通过set方法注入的.
 2. 使用@Autowired ,容器会遍历bean,如果符合注入的类的类型,就可以从当前容器管理的对象中获取符合条件的对象,设置给@Autowired所标注的属性域,构造方或者方法的定义.
@@ -210,7 +215,7 @@
 6. 使用注解其实是类似使用自定义的BeanPostProcess,需要将注解对应的AutowiredAnnotationBeanPostProcessor,必须在配置文件中使用<context:annotation-config>配置开启注解.,开启包扫描的注解<context:component-scan>也注入了这个process.
 7. <context:component-scan>这个注解虽然主要的目的是扫描@Controller,@Service,@Dao这类注解,为BeanFactory注入Bean,但是同时也支持<context:annotation-config>这种管理@Autowired依赖的功能.
 
-### 第七章 AOP
+## 第七章 AOP
 
 1. AOP概念:面向切面编程,它的实现语言为AOL,AOL不是专指某种语言,例如Java的AOL是AspectJ,还有其他语言的AOL,例如C语言的ASpectC.
 2. **静态AOP**:即第一代AOP,相应的横切关注点以Aspect形式实现之后,会通过特定的编译器,将实现后的Aspect编译并织入到系统的静态类中.优点是:java虚拟机可以像之前一样加载java类运行.缺点是不够灵活.横切关注点更换位置的时候,就需要更改配置文件的内容.
@@ -228,7 +233,7 @@
      - **introduction**(非常特殊)
 8. ProxyFactory类则是Spring AOP中最通用的织入器.
 
-### 第八章 Spring AOP概述及其实现机制
+## 第八章 Spring AOP概述及其实现机制
 
 1. **spring aop的实现机制**:Sring Aop属于第二代AOP,采用**动态代理**和**字节码生成**的技术实现,与最初的AspectJ采用编译器将横切逻辑织入目标对象不同,动态代理机制和字节码生成都是在运行期间为目标对象生成一个代理对象,而将横切逻辑织入到这个代理对象中,系统最终使用的是织入了横切逻辑的代理对象,而不是真正的目标对象.
 2. 静态代理是将代码写入到代理中,但是如果代理的类型发生改变,即使增强的方法是相同的但依然需要实现一遍,所以需要使用动态代理的方式.
@@ -237,7 +242,7 @@
 5. 静态代理每遇见一个类就需要生成一个代理,所以一般使用动态的代理,主要由一个类和一个接口组成,Proxy类和InvocationHandler接口.
 6. 动态字节码生成:实现MethodInterceptor接口定义增强方法,使用Enhancer设置需要增强的对象,调用Create方法.
 
-### 第九章 Spring AOP 一世
+## 第九章 Spring AOP 一世
 
 1. Spring Aop的joinpoint是面向方法的,如果想面向属性,则需要借助AspectJ.
 
@@ -359,19 +364,19 @@
 
 ---
 
-### 第十三章 统一的数据访问异常层次体系
+## 第十三章 统一的数据访问异常层次体系
 
 1. 当需要连接不同的数据源的时候,使用需要变换的就是连接数据源的代码,首先面对的问题是连接时候抛出的受检异常例如SqlException.解决办法
    - 封装成运行时异常.
    - 每种类型进行分类,提示用户.
 
-### 第十四章 JDBC API的最佳实践
+## 第十四章 JDBC API的最佳实践
 
 1. 为了实现数据库差异性以及事物管理,spring一般使用封装过的datasource.
 
 ---
 
-### 第十七章 事务管理
+## 第十七章 事务管理
 
 1. 事物的管理主要做了三件事情:
    1. 将事务资源进行统一管理.
@@ -399,7 +404,7 @@
 
 ---
 
-### 第二十二章
+## 第二十二章
 
 1. JSP:将Servlet中的视图渲染逻辑以独立的单元抽取出来.
 2. 控制器,模型,视图三者配合实现数据展示.控制器需要根据配置文件找到请求与页面的配置关系.
@@ -409,7 +414,7 @@
    - ViewResolver和View:将视图内容按照字节和字符分为两种类型.View来处理视图内容的具体工作,而ViewResolver类似于HandleMapping功能,记录了视图的对应的关系.
 4. 通过一个例子演示了如何配置.
 
-### 第二十四章 近距离接触Spring MVC主要角色
+## 第二十四章 近距离接触Spring MVC主要角色
 
 1. ![image-20210106162538865](.\picture\spring揭秘\image-20210106162538865.png)
 2. HandlerMapping主要是根据配置,为url找到对应的Controller类,SpringMVC的web应用中,我们为DispatchServlet提供多个Handler,按照优先级进行匹配,如果HandlerMapping能够返回不可用的Handler,继续向下查找.知道找到可用的Handler.
@@ -420,7 +425,7 @@
 
 ---
 
-### 第三十一章 Spring中任务的调度和线程池的支持
+## 第三十一章 Spring中任务的调度和线程池的支持
 
 1. Quart:任务调度框架
 2. SimpleAsyncTaskExecutor:提供最基础的异步执行能力,而实现的方式则是为每个任务创建新的线程.可以设置线程数的上限.
