@@ -315,7 +315,7 @@ public class ExampleBean {
    </bean>
    ~~~
 
-5. 当依赖关系并不十分直接的时候可以用depend-on属性,多依赖.
+5. 当依赖关系并不十分直接的时候可以用depend-on属性,多依赖.会在初始化beanOne之前初始化depends-on的类.
 
    ~~~xml
    

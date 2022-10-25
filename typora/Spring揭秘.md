@@ -70,21 +70,37 @@
 
 ### Autowired注解
 
-1. 相当于在xml中写了一个constructarg或者property(看它放的位置),Autowired注入成员变量(写在类名上)，利用set方法注入，要等类加载完了才注入bean.
+1. 根据Autowired放置的位置不同,底层使用的注入方法不同.
 
-2. Autowired注入构造方法中，利用构造器注入，有先后依赖关系.
+2. Autowired放在构造方法上，利用构造器注入，类初始化使就会创建依赖。
 
-3. setter方法注入，setter代码冗长，不能将属性设置为final。
+3. Autowired放在set方法上，setter方法注入，setter代码冗长，调用的时候才会被实例化。不能将属性设置为final。
+
+4. Autowired放在类上，用的变量注入，通过优先通过类型(然后通过类名)到BeanFactory里面寻找对应类型的.缺点:可能发生空指针异常,解决办法是用注解(Service,Component等)或者配置文件的方式将类进行实例化.除了反射来提供需要的类,单元测试时候无法复用,需要启动整个容器.
 
 ### IOC Service Provider
 
 1. 业务对象的构建管理
 2. 业务对象之间的依赖绑定
   1. **直接编码的方式**:在容器中直接用代码管理关系.所有方式的最终方式.
+
     - ![image-20201209145322335](.\picture\spring揭秘\image-20201209145322335.png)
     - 通过代码可以看到先注册了两个类,等需要之前注册过的类,直接从容器中获取.
   2. **配置文件的方式**,xml的方式最常见.
   3. **注解的方式**,其实注最终还是编码的方式来确定注入的关系.
+  4. Depend on 使用:
+
+     1. ~~~xml
+        <bean id="beanOne" class="ExampleBean" depends-on="manager,accountDao">
+            <property name="manager" ref="manager" />
+        </bean>
+        
+        <bean id="manager" class="ManagerBean" />
+        <bean id="accountDao" class="x.y.jdbc.JdbcAccountDao" />
+        ~~~
+
+     2. 当依赖关系并不十分直接的时候可以用depend-on属性,多依赖.会在初始化beanOne之前初始化depends-on的类.
+
 
 ## 第四章 Spring的IOC容器之BeanFactory
 
@@ -149,7 +165,25 @@
    2. 使用BeanFactoryAware接口
    3. 方法替换.**???**
 
-6. **FactoryBean和BeanFactory的区别**:FactoryBean本质是一个bean,是Spring容器提供的一种可以扩展容器对象实例化逻辑的接口.
+6. **FactoryBean和BeanFactory的区别**:FactoryBean本质是一个bean,是Spring容器提供的一种可以扩展容器对象实例化逻辑的接口.对于一些类,实例化过程过于繁琐,xml配置过于复杂,宁愿使用java代码来完成,这时候就需要实现FactoryBean的接口,
+
+   1. ~~~java
+      public interface FactoryBean<T> {
+          String OBJECT_TYPE_ATTRIBUTE = "factoryBeanObjectType";
+      
+          @Nullable
+          T getObject() throws Exception;
+      
+          @Nullable
+          Class<?> getObjectType();
+      
+          default boolean isSingleton() {
+              return true;
+          }
+      }
+      ~~~
+
+   2. getObject()方法就是需要实例化的类.
 
 7. Spring的IOC容器
 
