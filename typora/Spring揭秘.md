@@ -162,8 +162,74 @@
    </bean>
    ```
 
-   2. 使用BeanFactoryAware接口
-   3. 方法替换.**???**
+   2. 使用 @Lookup注解的方式
+
+      1. ~~~java
+         @Component
+         public class Write{
+         
+            @Autowired
+             private Learn learn;
+             private String name;
+         
+             public String getName() {
+                 return name;
+             }
+         
+             public void setName(String name) {
+                 this.name = name;
+             }
+         
+              @Lookup
+             // 每次调用都获取一个新的
+             public Learn getLearn() {
+                 return this.learn;
+             }
+             public void setLearn(Learn learn) {
+                 this.learn = learn;
+             }
+         }
+         ~~~
+
+         3. 如果Learn是使用@Bean注解,则Lookup失效.
+
+   3. 使用ApplicationContextAware接口
+
+      1. ~~~java
+         @Component
+         public class Write implements ApplicationContextAware {
+         
+         //    @Autowired
+             private Learn learn;
+         
+             private ApplicationContext applicationContext;
+             private String name;
+         
+             public String getName() {
+                 return name;
+             }
+         
+             public void setName(String name) {
+                 this.name = name;
+             }
+         
+             //    @Lookup
+             // 每次调用都获取一个新的
+             public Learn getLearn() {
+                 return applicationContext.getBean("learn", Learn.class);
+             }
+         
+             public void setLearn(Learn learn) {
+                 this.learn = learn;
+             }
+         
+         
+             @Override
+             public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+                 this.applicationContext = applicationContext;
+             }
+         }
+         ~~~
 
 6. **FactoryBean和BeanFactory的区别**:FactoryBean本质是一个bean,是Spring容器提供的一种可以扩展容器对象实例化逻辑的接口.对于一些类,实例化过程过于繁琐,xml配置过于复杂,宁愿使用java代码来完成,这时候就需要实现FactoryBean的接口,
 
@@ -200,30 +266,63 @@
    - BeanFactoryPostProcess的容器扩展机制.允许容器实例化之前(继在容器启动的最后时刻),对注册到容器BeanDefinition所保存的信息做相应的修改.例如修改Bean定义的某些属性,为Bean定义添加其他的信息等.最常见的例子就是数据库的用户名和密码.
    - PropertyPlaceholderConfigurer,PropertyOverrideConfigurer和CustomEditorConfigure
 
-9. Bean的实例化阶段
+9. Bean的注册 使用xml通过set方法注入
 
-   1. ![image-20201210162931583](.\picture\spring揭秘\image-20201210162931583.png)
-   2. 对于BeanFactory使用的是Bean的懒加载策略,只到A被请求bean或者间接请求,间接是指有依赖到Bean时候.
-   3. 虽然是通过BeanDefinition取得实例化信息,通过反射就能创建对象实例,但是并不是直接返回的对象实例,而是BeanWrapper对构造完成的对象实例进行包裹.返回相应的BeanWrapper.进行包裹为的就是第二步设置对象属性.
-   4. BeanWarpperImpl实现类作用是对每个Bean实现包裹,设置或者获取Bean的属性,BeanWarpperImpl间接继承了PropertyEditorRegitry,会将注册信息传递给wrapper.
+   1. ~~~xml
+      <bean id="clientService" class="com.liuliu.outstanding.factory.ClientService">
+          <!-- additional collaborators and configuration for this bean go here -->
+      </bean>
+      <bean id="son" class="com.liuliu.outstanding.common.Son" parent="father">
+              <property name="name" value="Son"></property>
+              <property name="clientService" ref="clientService"></property>
+      </bean>
+      ~~~
 
-10. BeanPostProcessor
+   2. 会将clientService注册到properties里面
+
+      1. ![](.\picture\spring揭秘\Bean的注册1.png)
+
+   3. 将Life类通过参数进行注入,参放在了constructorArgumentValues里面
+
+      1. ~~~xml
+          <bean id="life" class="com.liuliu.outstanding.common.Life">
+             </bean>
+             <bean id="son" class="com.liuliu.outstanding.common.Son" parent="father" >
+                 <constructor-arg name="life">
+                     <ref bean="life"></ref>
+                 </constructor-arg>
+                 <property name="name" value="Son"></property>
+             </bean>
+         ~~~
+
+      2. ![](.\picture\spring揭秘\Bean的注册2.png)
+
+10. 反射: **反射就是把java类中的各种成分映射成一个个的Java对象**。
+
+11. Bean的实例化阶段
+
+    1. ![image-20201210162931583](.\picture\spring揭秘\image-20201210162931583.png)
+    2. 对于BeanFactory使用的是Bean的懒加载策略,只到A被请求bean或者间接请求,间接是指有依赖到Bean时候.
+    3. 虽然是通过BeanDefinition取得实例化信息,通过反射就能创建对象实例,但是并不是直接返回的对象实例,而是BeanWrapper对构造完成的对象实例进行包裹.返回相应的BeanWrapper.进行包裹为的就是第二步设置对象属性.
+    4. BeanWarpperImpl实现类作用是对每个Bean实现包裹,设置或者获取Bean的属性,BeanWarpperImpl间接继承了PropertyEditorRegitry,会将注册信息传递给wrapper.
+
+12. BeanPostProcessor
 
     1. 存在于对象实例化阶段,注意与BeanFactoryPostProcess则是存在于容器的启动阶段.与BeanFactoryPostProcess管理BeanDefinition类似的是,BeanPostProcessor管理的实例化后的对象.
     2. 各种aware接口就是在这postProcessBeforeInitialization处理的.
     3. Spring的AOP功能就是用BeanPostProcess来为对象生成相应的**代理对象**.
 
-11. 自定义BeanPostProcess
+13. 自定义BeanPostProcess
 
-   12. 实现BeanPostProcessor接口,重写BeforeInitialization
+   14. 实现BeanPostProcessor接口,重写BeforeInitialization
 
-   13. 将自定义的processor注册到容器.
+   15. 将自定义的processor注册到容器.
 
        - 对于BeanFactory使用configurableBeanFactory.addBeanProcessor方法
        - 对于Application则作为一个Bean配置在xml中就可以了.
 
 - InitializingBean和init-method 对于那些实例化后仍需要更改bean属性的需求.例如计算股市信息去除周六日.InitializingBean是一个接口,init-method则在xml配置有限执行的方法.
-       
+- 目前使用**@PostConstruct**和**@PreDestroy**在Bean初始化之前和初始化之后调用.@PostConstruct一般用于集成第三方库,@PreDestroy 则一般用于回调或者自定义对象的销毁.
 
 18. Bean的销毁
 
@@ -238,6 +337,7 @@
 3. MessageSource:统一的国际化访问的方式,传入相应的Locale获取对应的信息.
 4. 容器内事件的发布,其实使用的是时间的监听机制.
 5. 对配置模块加载的简化.
+6. 类初始化后存放的位置**ClassPathXmlApplicationContext** 和 **AnnotationConfigApplicationContext** 分别是通过xml配置的Bean和注解配置的Bean.
 
 第六章 注解
 

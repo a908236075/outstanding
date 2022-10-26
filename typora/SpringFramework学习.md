@@ -304,10 +304,8 @@ public class ExampleBean {
            c:thingThree-ref="beanThree" c:email="something@somewhere.com"/>
    
    </beans>
-   
-   
    ~~~
-
+   
 4. ~~~xml
    <!--复合参数的赋值-->
    <bean id="something" class="things.ThingOne">
