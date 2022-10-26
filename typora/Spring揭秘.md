@@ -332,12 +332,53 @@
 ## 第五章 ApplicationContext容器
 
 1. Resource和ResourceLoader
+
 2. 国际化信息的支持.
    1. 不同的国家配置中进行切换.Locale.US代表美国地区
+   
 3. MessageSource:统一的国际化访问的方式,传入相应的Locale获取对应的信息.
+
 4. 容器内事件的发布,其实使用的是时间的监听机制.
+
 5. 对配置模块加载的简化.
+
 6. 类初始化后存放的位置**ClassPathXmlApplicationContext** 和 **AnnotationConfigApplicationContext** 分别是通过xml配置的Bean和注解配置的Bean.
+
+7. 当依赖的类相同类型有多个的时候,使用@Primary注解或者**两处**都定义@Qualifier("XXX")确定哪个类优先.
+
+   1. ~~~java
+      @Component
+      public class GrandFather {
+          @Autowired
+          @Qualifier("son1")
+          private Son son;
+      }
+      
+      @Configuration
+      public class LifeConfig {
+      
+          @Bean
+          @Qualifier("son1")
+         / @Primary
+          public Son getSon1() {
+              Son son = new Son();
+              son.setName("张三");
+              return son;
+          }
+      
+          @Bean
+          public Son getSon2() {
+              Son son = new Son();
+              son.setName("李四");
+              return son;
+          }
+      
+      
+      }
+      ~~~
+
+   2. 
+
 
 第六章 注解
 
