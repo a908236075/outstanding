@@ -452,7 +452,7 @@
    }
    ~~~
 
-   matches方法提供了关注参数过滤和不关注参数过滤的两种方法.isRuntime为返回false时候,表示不会考虑joinpoint的方法参数,称为StaticMethodMatcher,反之为DynamicMethodMatcher.
+   matches方法提供了关注参数过滤和不关注参数过滤的两种方法.isRuntime为返回false时候,表示不会考虑joinpoint的**方法参数**,称为StaticMethodMatcher,反之为DynamicMethodMatcher.
 
    spring最主要的支持就是方法的拦截.
 
@@ -469,7 +469,7 @@
 8. 常见的PonitCut
 
    - NameMatchMethodPointCut
-     - 属于StaticMethodMatcherPointcut的子类,可以根据自身指定的方法名和Jointpoint处的方法名称进行匹配.但是无法对重载的方法进行匹配.
+     - 属于**StaticMethodMatcherPointcut**的子类,可以根据自身指定的方法名和Jointpoint处的方法名称进行匹配.但是无法对重载的方法进行匹配.
 
 9. pointcut在Spring中可以作为一个普通的Bean,配置在xml中.
 
@@ -490,6 +490,8 @@
 17. 通过methodInceptor的invoke方法的methodInvocation参数,我们可以控制对相应joinpoint的拦截行为.通过调用methodInvocation的process方法可以使程序继续的执行.
 
 18. IntroductionAdvisor 只能用于类级别的拦截.
+
+19. 把pointcut和advisor连接起来的的类是PointcutAdvisor家族类,常用的是DefaultPointcutAdvisor类.
 
 19. 当有多个横切逻辑的时候,需要指定他们的优先级,如果没有指定,则按照配置文件声明的顺序,谁先在前谁先执行.多个横切逻辑有时候会因为顺序发生异常.
 
