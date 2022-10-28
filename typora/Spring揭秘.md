@@ -493,37 +493,101 @@
 
 19. 把pointcut和advisor连接起来的的类是PointcutAdvisor家族类,常用的是DefaultPointcutAdvisor类.
 
-19. 当有多个横切逻辑的时候,需要指定他们的优先级,如果没有指定,则按照配置文件声明的顺序,谁先在前谁先执行.多个横切逻辑有时候会因为顺序发生异常.
+20. 当有多个横切逻辑的时候,需要指定他们的优先级,如果没有指定,则按照配置文件声明的顺序,谁先在前谁先执行.多个横切逻辑有时候会因为顺序发生异常.
 
-20. ProxyFactory是一个织入器.ProxyFactoryBean容器中的织入器.
+21. ProxyFactory是一个织入器.ProxyFactoryBean容器中的织入器.
 
-21. AdvisedSupport是生成代理对象所需要的信息的载体.一类是ProxyConfig为统领,承载生成代理对象的控制信息,另一类以Advised为旗帜,承载生成代理对象所需要的信息,如advice,advisor等.
+    1. ~~~java
+       public ProxyFactory(Object target) {
+       		setTarget(target);
+           // setInterfaces 设置增强的接口.
+       		setInterfaces(ClassUtils.getAllInterfaces(target));
+       	}
+       ~~~
 
-22. 通过jdk动态代理生成的代理类,需要强转为实现的接口,因为只有接口才有和横切逻辑,当使用Cglib的方式,代理的对象就要转成实体类,因为他是通过类进行增强的.
+    2. 代理可以强制转换成接口的类型,但是不能转换成接口的实现类.
 
-23. SpringAOP二代其实底层使用的还是一代.
+    3. proxyFactory.setProxyTargetClass(true); 则使用CGLib基于类的中动态代理模式.
 
-24. 注解的方式advice的顺序是,谁先声明谁先执行,但是后置advice,谁先声明,谁就是最后执行优先.
+    4. ![](.\picture\spring揭秘\AopProxy代理.png)
 
-25. 让spring扫描切面的注解,在配置文件中配置
+22. JDK动态代理是通过Proxy.newProxyInstance()方法声场代理类, CGLib动态代理使用Enhancer enhancer = createEnhancer(); 设置父类和接口,最终调用enhancer.create()方法生成代理类.
+
+    1. ![](.\picture\spring揭秘\JDK动态代理.png)
+
+23. AopProxyFactory 工厂生成代理类,只有一个实现类DefaultAopProxyFactory
+
+    1. ~~~java
+       public class DefaultAopProxyFactory implements AopProxyFactory, Serializable {
+       
+       	private static final long serialVersionUID = 7930414337282325166L;
+       
+       
+       	@Override
+       	public AopProxy createAopProxy(AdvisedSupport config) throws AopConfigException {
+               // 如果 config.isOptimize() 或者  config.isProxyTargetClass() 返回true 或者是没有接口的实现
+               // 则使用CGLib动态代理.
+       		if (!NativeDetector.inNativeImage() &&
+       				(config.isOptimize() || config.isProxyTargetClass() || hasNoUserSuppliedProxyInterfaces(config))) {
+       			Class<?> targetClass = config.getTargetClass();
+       			if (targetClass == null) {
+       				throw new AopConfigException("TargetSource cannot determine target class: " +
+       						"Either an interface or a target is required for proxy creation.");
+       			}
+       			if (targetClass.isInterface() || Proxy.isProxyClass(targetClass) || ClassUtils.isLambdaClass(targetClass)) {
+       				return new JdkDynamicAopProxy(config);
+       			}
+       			return new ObjenesisCglibAopProxy(config);
+       		}
+       		else {
+       			return new JdkDynamicAopProxy(config);
+       		}
+       	}
+       
+       	/**
+       	 * Determine whether the supplied {@link AdvisedSupport} has only the
+       	 * {@link org.springframework.aop.SpringProxy} interface specified
+       	 * (or no proxy interfaces specified at all).
+       	 */
+       	private boolean hasNoUserSuppliedProxyInterfaces(AdvisedSupport config) {
+       		Class<?>[] ifcs = config.getProxiedInterfaces();
+       		return (ifcs.length == 0 || (ifcs.length == 1 && SpringProxy.class.isAssignableFrom(ifcs[0])));
+       	}
+       
+       }
+       ~~~
+
+    2. DefaultAopProxyFactory能正常的工作,需要依赖于ProxyConfig和Advice,他们的继承关系如下.
+
+       1. ![](.\picture\spring揭秘\ProxyFactory.png)
+
+24. AdvisedSupport是生成代理对象所需要的信息的载体.一类是ProxyConfig为统领,承载生成代理对象的控制信息,另一类以Advised为旗帜,承载生成代理对象所需要的信息,如advice,advisor等.
+
+25. 通过jdk动态代理生成的代理类,需要强转为实现的接口,因为只有接口才有和横切逻辑,当使用Cglib的方式,代理的对象就要转成实体类,因为他是通过类进行增强的.
+
+26. SpringAOP二代其实底层使用的还是一代.
+
+27. 注解的方式advice的顺序是,谁先声明谁先执行,但是后置advice,谁先声明,谁就是最后执行优先.
+
+28. 让spring扫描切面的注解,在配置文件中配置
 
     1. ```xml
        <aop:aspectj-autoproxy proxy-target-class="true">
        ```
 
     2. 使用上面的配置,可以达到基于DTD的配置方式中,直接声明AnnotationAwareAspectJAutoProxyCreator相同的效果.
-    
-26. 在AspectJ中,this指代调用方法一方所在的对象,target指代被调用方法所在的对象.而**在Spring AOP中,this指代的是目标对象的代理对象,而target如其名指的是目标对象.**
 
-27. execute和within都能定义Pointcut的jointpoint.
+29. 在AspectJ中,this指代调用方法一方所在的对象,target指代被调用方法所在的对象.而**在Spring AOP中,this指代的是目标对象的代理对象,而target如其名指的是目标对象.**
 
-28. 当Advice声明在不同的Aspect内的时候,需要实现Ordered接口,通过getOrder()方法来判断,越小优先级越高.否则,advice的执行顺序是不确定的.
+30. execute和within都能定义Pointcut的jointpoint.
 
-29. 通过自动代理机制处理横切逻辑到目标对象的织入,是28条说明的样子,但是当通过编程的方式处理时,advice由添加到AspectJProxyFactory的顺序来决定的.
+31. 当Advice声明在不同的Aspect内的时候,需要实现Ordered接口,通过getOrder()方法来判断,越小优先级越高.否则,advice的执行顺序是不确定的.
 
-30. 最新的xml配置都是基于schema的格式.
+32. 通过自动代理机制处理横切逻辑到目标对象的织入,是28条说明的样子,但是当通过编程的方式处理时,advice由添加到AspectJProxyFactory的顺序来决定的.
 
-31. ```xml
+33. 最新的xml配置都是基于schema的格式.
+
+34. ```xml
     <apo:config proxy-target-class="false">
     	<aop:pointcut></aop:pointcut>    
         <aop:advisor></aop:advisor>
@@ -533,9 +597,9 @@
 
     pointcout,advisor,aspect顺序必须是这样.
 
-32. Around Advice必须要结合ProceedingjoniPoint类型进行使用.
+35. Around Advice必须要结合ProceedingjoniPoint类型进行使用.
 
-33. **内部方法调用失败的问题:**当目标对象中原始方法调用依赖其它对象,那没问题,可以为目标对象注入所依赖的对象的代理,但是当目标对象中的原始方法调用直接调用自身方法的时候,也就是说,它依赖于自身所定义的其它方法的时候,就会出现找不到依赖方法的异常.因为method1调用的是TargetObject对象上的method2,而不是ProxyObject上的method2增强过的方法.
+36. **内部方法调用失败的问题:**当目标对象中原始方法调用依赖其它对象,那没问题,可以为目标对象注入所依赖的对象的代理,但是当目标对象中的原始方法调用直接调用自身方法的时候,也就是说,它依赖于自身所定义的其它方法的时候,就会出现找不到依赖方法的异常.因为method1调用的是TargetObject对象上的method2,而不是ProxyObject上的method2增强过的方法.
 
     1. 解决:在调用自身的方法的时候,使用AOPContext.curretnProxy()调用,并设置weaver.setExposeProxy(true);
 
