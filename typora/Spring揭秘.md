@@ -495,7 +495,7 @@
 
 20. 当有多个横切逻辑的时候,需要指定他们的优先级,如果没有指定,则按照配置文件声明的顺序,谁先在前谁先执行.多个横切逻辑有时候会因为顺序发生异常.
 
-21. ProxyFactory是一个织入器.ProxyFactoryBean容器中的织入器.
+21. ProxyFactory是一个织入器.
 
     1. ~~~java
        public ProxyFactory(Object target) {
@@ -565,11 +565,47 @@
 
 25. 通过jdk动态代理生成的代理类,需要强转为实现的接口,因为只有接口才有和横切逻辑,当使用Cglib的方式,代理的对象就要转成实体类,因为他是通过类进行增强的.
 
-26. SpringAOP二代其实底层使用的还是一代.
+26. ProxyFactoryBean容器中的织入器.BeanFactory 和FactoryBean的区别?
 
-27. 注解的方式advice的顺序是,谁先声明谁先执行,但是后置advice,谁先声明,谁就是最后执行优先.
+    1. 如果容器中某个对象持有FactoryBean的引用,它取得的不是FactoryBean本身,而是getObject()方法返回的对象.
 
-28. 让spring扫描切面的注解,在配置文件中配置
+    2. 所以引用ProxyFactoryBean返回的是某个Proxy对象,等价于Proxy+FactoryBean.
+
+    3. ~~~java
+       /**
+       	 * Return a proxy. Invoked when clients obtain beans from this factory bean.
+       	 * Create an instance of the AOP proxy to be returned by this factory.
+       	 * The instance will be cached for a singleton, and create on each call to
+       	 * {@code getObject()} for a proxy.
+       	 * @return a fresh AOP proxy reflecting the current state of this factory
+       	 */
+       	@Override
+       	@Nullable
+       	public Object getObject() throws BeansException {
+       		initializeAdvisorChain();
+       		if (isSingleton()) {
+       			return getSingletonInstance();
+       		}
+       		else {
+       			if (this.targetName == null) {
+       				logger.info("Using non-singleton proxies with singleton targets is often undesirable. " +
+       						"Enable prototype proxies by setting the 'targetName' property.");
+       			}
+       			return newPrototypeInstance();
+       		}
+       	}
+       ~~~
+
+    4. 基于ProxyFactoryBean的配置
+
+       1. ![](.\picture\spring揭秘\ProxyFactoryBean配置.png)
+       2. 注意MockTask 是代理对象而不是目标对象,否则不会增强.
+
+27. SpringAOP二代其实底层使用的还是一代.
+
+28. 注解的方式advice的顺序是,谁先声明谁先执行,但是后置advice,谁先声明,谁就是最后执行优先.
+
+29. 让spring扫描切面的注解,在配置文件中配置
 
     1. ```xml
        <aop:aspectj-autoproxy proxy-target-class="true">
@@ -577,31 +613,49 @@
 
     2. 使用上面的配置,可以达到基于DTD的配置方式中,直接声明AnnotationAwareAspectJAutoProxyCreator相同的效果.
 
-29. 在AspectJ中,this指代调用方法一方所在的对象,target指代被调用方法所在的对象.而**在Spring AOP中,this指代的是目标对象的代理对象,而target如其名指的是目标对象.**
+## 第十章 Spring AOP 二世
 
-30. execute和within都能定义Pointcut的jointpoint.
+1. Spring AOP 只支持方法级别的Joinpoint.
 
-31. 当Advice声明在不同的Aspect内的时候,需要实现Ordered接口,通过getOrder()方法来判断,越小优先级越高.否则,advice的执行顺序是不确定的.
+2. @Aspect形式Pointcut表达式的标志符
 
-32. 通过自动代理机制处理横切逻辑到目标对象的织入,是28条说明的样子,但是当通过编程的方式处理时,advice由添加到AspectJProxyFactory的顺序来决定的.
+   1. execution:方法执行的时候进行拦截,需要定义方法的返回类型,方法名以及参数
+   2. within:标志符只接受类型声明,匹配指定类的所有方法的执行.
+   3. this,target:在AspectJ中,this指代调用方法一方所在的对象,target指代被调用方法所在的对象
+   4. args:捕捉指定参数类型,而不管该方法在什么类型中被声明.
 
-33. 最新的xml配置都是基于schema的格式.
+3. .**在Spring AOP中,this指代的是目标对象的代理对象,而target如其名指的是目标对象.**
 
-34. ```xml
-    <apo:config proxy-target-class="false">
-    	<aop:pointcut></aop:pointcut>    
-        <aop:advisor></aop:advisor>
-        <aop:aspect></aop:aspect>
-    </aop:config>
-    ```
+4. execute和within都能定义Pointcut的jointpoint.
 
-    pointcout,advisor,aspect顺序必须是这样.
+5. 当Advice声明在不同的Aspect内的时候,需要实现Ordered接口,通过getOrder()方法来判断,越小优先级越高.否则,advice的执行顺序是不确定的.
 
-35. Around Advice必须要结合ProceedingjoniPoint类型进行使用.
+6. 通知的优先级
 
-36. **内部方法调用失败的问题:**当目标对象中原始方法调用依赖其它对象,那没问题,可以为目标对象注入所依赖的对象的代理,但是当目标对象中的原始方法调用直接调用自身方法的时候,也就是说,它依赖于自身所定义的其它方法的时候,就会出现找不到依赖方法的异常.因为method1调用的是TargetObject对象上的method2,而不是ProxyObject上的method2增强过的方法.
+   1. 可以通过@Order定义@Aspect顺序.
+   2. Spring Framework 5.2.7之后相同条件先通知的执行的顺序是:@Around`, `@Before`, `@After`, `@AfterReturning`, `@AfterThrowing.
+
+7. 通过自动代理机制处理横切逻辑到目标对象的织入,是28条说明的样子,但是当通过编程的方式处理时,advice由添加到AspectJProxyFactory的顺序来决定的.
+
+8. 最新的xml配置都是基于schema的格式.
+
+9. ```xml
+   <apo:config proxy-target-class="false">
+   	<aop:pointcut></aop:pointcut>    
+       <aop:advisor></aop:advisor>
+       <aop:aspect></aop:aspect>
+   </aop:config>
+   ```
+
+   pointcout,advisor,aspect顺序必须是这样.
+
+10. Around Advice必须要结合ProceedingjoniPoint类型进行使用.
+
+11. **内部方法调用失败的问题:**当目标对象中原始方法调用依赖其它对象,那没问题,可以为目标对象注入所依赖的对象的代理,但是当目标对象中的原始方法调用直接调用自身方法的时候,也就是说,它依赖于自身所定义的其它方法的时候,就会出现找不到依赖方法的异常.因为method1调用的是TargetObject对象上的method2,而不是ProxyObject上的method2增强过的方法.
 
     1. 解决:在调用自身的方法的时候,使用AOPContext.curretnProxy()调用,并设置weaver.setExposeProxy(true);
+
+12. AOP经常使用的场景:异常处理,安全检查,缓存.
 
 ---
 
