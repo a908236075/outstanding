@@ -679,10 +679,11 @@
    3. 事务开始和结束的定义.
 2. Spring的事物框架理论设计原则:让事物管理的关注点和数据访问关注点相分离.
 3. 事物的实现思路:例如JDBC的局部事物控制是由同一个Connection来完成,所以要保证数据访问方法处于一个事物中,我们就要保证连接的是同一个Connection,为了不让代码与Connection耦合,将Connection放在统一的地方,绑定到当前的线程,谁需要谁获取.
-4. DatasourceUtils最主要的功能是对Connection的管理.
+4. DatasourceUtils最主要的功能是对Connection的管理.会从PlatformTransactionManager中获取connection,如果当前线程没有绑定connection,通过数据访问对象的Datasource中获取新的connection,否则使用绑定的connection,用来保证数据访问处于同一个事物中.
 5. Spring的事务抽象包括三个主要的接口:
    1. PlatformTransactionManager:负责界定事务边界.
    2. TransactionDefinition:负责定义事务相关属性,包括隔离级别,传播行为等.PlatformTransactionManager根据相关TransactionDefinition属性开启相关事务.
+      1. 隔离级别,事物传播,超时时间和是否为只读的事物.
    3. TransactionStatus:事务开启之后到事务结束期间的状态由Status维护.
 6. **事物的传播行为:**
    - Required:如果当前存在一个事物,则加入当前的事物,如果没有就创建,总之,至少要保证在一个事物中运行,是默认的事物传播行为.
@@ -692,10 +693,11 @@
    - Not_Supported:不支持当前事务,而是没有事务的情况下直接执行,如果当前存在事物的话,原则上被挂起.
    - Never;不需要事务,存在事务就抛出异常.
    - Nested:如果存在事务,则在当前事务的一个嵌套事务中执行,如果没有,创建新的事物,但是他创建的事务不同于Required_New,他比外层的事务优先级有低,而Required_New创建的事务是与外层事务等级相同的,创建的时候外层事务是挂起的状态.适用于将一个大事务分解成多个小事务处理的场景.
-7. 介绍了Spring各种时代事务的配置方式.现在常用的是@Transaction注解,在里面可以定义事务的传播行为和事务的隔离度,还可以通过xml用<tx></tx>进行配置.
+7. TransactionStatus可以通过SavePoint创建嵌套事物,SavePoint可以作为一个临时状态点,方便子事物的回滚.
+8. 介绍了Spring各种时代事务的配置方式.现在常用的是@Transaction注解,在里面可以定义事务的传播行为和事务的隔离度,还可以通过xml用<tx></tx>进行配置.
    1. ![image-20210103125257642](.\picture\spring揭秘\image-20210103125257642.png)
-8. ThreadLocal:不需要管理多个线程共享,但是需要多个线程进行传递的资源,例如JDBC连接Connection,需要将资源绑定到线程上.避免多个线程同时访问出现混乱.它与线程绑定.ThreadLocal工具类底层就是一个相当于一个Map,key存放的当前线程,value存放需要共享的数据.
-9. 分布式事务,涉及到ResourceManager,XAResource,TransactionManager三者直接的交互实现分布式事务.
+9. ThreadLocal:不需要管理多个线程共享,但是需要多个线程进行传递的资源,例如JDBC连接Connection,通过TheadLocal为每个线程分配一个他们各自持有的Connection,将资源绑定到线程上.避免多个线程同时访问出现混乱.它与线程绑定.ThreadLocal是当前线程的分身,ThreadLocal工具类底层就是一个相当于一个Map,key存放的当前线程,value存放需要共享的数据.
+10. 分布式事务,涉及到ResourceManager,XAResource,TransactionManager三者直接的交互实现分布式事务.
 
 ---
 
