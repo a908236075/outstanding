@@ -1278,7 +1278,13 @@ kill -9 12533
 
 ~~~
 
+### 查询文件目录大小
 
+1. ~~~shell
+   du  XXX -sh    XXX 为路径
+   [root@localhost gac_vsm]# du ./models -sh
+   1.6G    ./models
+   ~~~
 
 
 
