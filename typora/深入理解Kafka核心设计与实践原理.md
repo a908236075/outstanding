@@ -40,8 +40,8 @@
 
    - ~~~shell
      #查看所有可用的主题
-     ./bin/kafka-topics.sh --zookeeper localhost:2181/kafka -list
-     ./bin/kafka-topics.sh --zookeeper localhost:2181 -list
+     ./kafka-topics.sh --zookeeper localhost:2181/kafka -list
+     ./kafka-topics.sh --zookeeper localhost:2181 -list
      ~~~
      
    - ~~~shell
@@ -79,6 +79,7 @@
    - ~~~shell
      ## 从开始消费
      ./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic flow_log --from-beginning
+     ./kafka-console-consumer.sh --bootstrap-server 10.2.1.170:9092 --topic CCU_safety_data_topic --from-beginning
      ## 指定消费组
      ./kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic flow-event-log --consumer-property group.id=flowgroup2
      ##或者
@@ -88,6 +89,7 @@
    - ~~~shell
      ## 模拟生产者
      ./kafka-console-producer.sh --broker-list localhost:9092 --topic flow_log
+     ./kafka-console-producer.sh --broker-list 10.2.1.170:9092 --topic CCU_safety_data_topic
      ~~~
 
 6. 查看消费组消费情况

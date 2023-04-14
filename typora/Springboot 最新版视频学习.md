@@ -407,7 +407,7 @@
             1. 由ServletModelAttributeMethodProcessor参数解析器处理,判断是否为简单类型
 
                   1. ~~~java
-            public static boolean isSimpleValueType(Class<?> type) {
+               public static boolean isSimpleValueType(Class<?> type) {
                                 return (Void.class != type && void.class != type &&
                             (ClassUtils.isPrimitiveOrWrapper(type) ||
                                         Enum.class.isAssignableFrom(type) ||
@@ -420,7 +420,7 @@
                                         Locale.class == type ||
                                         Class.class == type));
                             }
-                        ~~~
+                     ~~~
             
             2. 将Request的Servelet中的属性封装到接受的参数的类中(ModelAttributeMethodProcessor),核心方法是 **WebDataBinder binder = binderFactory.createBinder(webRequest, attribute, name);**
             

@@ -455,7 +455,7 @@ redis-cli --cluster fix 127.0.0.1:7000
       sadd alphabet a c d b
       sort alphabet ALPHA
       ##按元素分值排序
-sadd test-result 3.0 jack 2.0 tom 1.0 lihua
+      sadd test-result 3.0 jack 2.0 tom 1.0 lihua
       srange test-result 0 -1
       ## 为各元素设置序号
       mset Peter_number 1 tom_number 2 jack_number 3
