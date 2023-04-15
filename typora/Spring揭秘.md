@@ -705,6 +705,7 @@
 
 1. JSP:将Servlet中的视图渲染逻辑以独立的单元抽取出来.
 2. 控制器,模型,视图(MVC)三者配合实现数据展示.控制器需要根据配置文件找到请求与页面的配置关系.
+2. ContextLoaderListener的职责是将整个的Web应用程序加载顶层的WebApplicationContext.WebApplication主要用于提供所有的中间层服务.所使用的DataSource,Dao,Service等都在WebApplication中注册.
 3. ![image-20210103221028161](.\picture\spring揭秘\image-20210103221028161.png)
 
    - HandlerMapping:定义了每个请求对应访问的Controller.
