@@ -1286,9 +1286,31 @@ kill -9 12533
    1.6G    ./models
    ~~~
 
+### 查看内存
 
+1. ~~~shell
+   查看占用cpu最高的进程
+   
+   ps aux|head -1;ps aux|grep -v PID|sort -rn -k +3|head
+   
+   或者top （然后按下M，注意这里是大写）
+   
+   查看占用内存最高的进程
+   
+   ps aux|head -1;ps aux|grep -v PID|sort -rn -k +4|head
+   
+   或者top （然后按下P，注意这里是大写）
+   ~~~
 
+### 常用命令
 
+1. ~~~shell
+   ## 远程拷贝
+   scp -r 本地目录  用户@ip地址:文件路径
+   
+   ~~~
+
+2. 
 
 
 
