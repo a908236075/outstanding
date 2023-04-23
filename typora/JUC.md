@@ -78,17 +78,17 @@
 5. ReentrantLock可重入锁非公平锁的lock方法
 
    1. ~~~java
-       final void lock() {
-                  if (compareAndSetState(0, 1))
-                      setExclusiveOwnerThread(Thread.currentThread());
-                  else
-                      acquire(1);
-              }
-        public final void acquire(int arg) {
-              if (!tryAcquire(arg) &&
-                  acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
-                  selfInterrupt();
-          }
+      final void lock() {
+                 if (compareAndSetState(0, 1))
+                     setExclusiveOwnerThread(Thread.currentThread());
+                 else
+                     acquire(1);
+             }
+       public final void acquire(int arg) {
+             if (!tryAcquire(arg) &&
+                 acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
+                 selfInterrupt();
+         }
       ~~~
 
    2. 锁主要由三个方法组成
@@ -153,3 +153,60 @@
             ~~~
 
          2. 主要的作用是设置锁的状态. state=1  并将节点的waitStatus状态设置为-1 代表 已经准备好,随时可以调用.  
+
+
+## 读锁与写锁
+
+​	1. Lock.lock() 将所包含的业务进行串行,但是当有读取的时候,希望线程不阻塞,所有,创建了读锁和写锁,读读共享,读写互斥 .
+
+```java
+ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+lock.readLock().lock();
+lock.readLock().unlock();
+lock.writeLock().lock();
+lock.writeLock().unlock();
+```
+
+## 邮戳锁
+
+1. 当读线程非常多，写线程很少的情况下，很容易导致写线程“饥饿”，也就是线程负责读任务,但是有一个写任务,只能一直等待读任务完成后,才能进行.
+
+2. 解决的办法是实现了一个队列,每次不管是读锁也好写锁也好,未拿到锁就加入队列,然后每次解锁队列头存储的线程节点获取锁,以此避免饥饿。
+
+3. ~~~java
+   class Point {
+       private int x, y;
+       final StampedLock sl = new StampedLock();
+    
+       //计算到原点的距离  
+       double distanceFromOrigin() {
+           // 乐观读
+           long stamp = sl.tryOptimisticRead();
+           // 读入局部变量，
+           // 读的过程数据可能被修改
+           int curX = x, curY = y;
+           //判断执行读操作期间，
+           //是否存在写操作，如果存在，
+           //则sl.validate返回false
+           if (!sl.validate(stamp)) {
+               // 升级为悲观读锁
+               stamp = sl.readLock();
+               try {
+                   curX = x;
+                   curY = y;
+               } finally {
+                   //释放悲观读锁
+                   sl.unlockRead(stamp);
+               }
+           }
+           return Math.sqrt(curX * curX + curY * curY);
+       }
+   }
+   ~~~
+
+## 其它知识
+
+1. 重写Thread和重写Runable接口的区别
+   1. 继承Thread类的，我们相当于拿出三件事即三个卖票10张的任务分别分给三个窗口，他们各做各的事各卖各的票各完成各的任务，因为MyThread继承Thread类，所以在new MyThread的时候在创建三个对象的同时创建了三个线程；
+   2. 实现Runnable的， 相当于是拿出一个卖票10张得任务给三个人去共同完成，new MyThread相当于创建一个任务，然后实例化三个Thread，创建三个线程即安排三个窗口去执行。
+
