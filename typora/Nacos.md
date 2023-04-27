@@ -276,19 +276,24 @@ public void run() {
 
 ### 服务的发现
 
-#### 客户端
+#### 客户端(服务消费者)
 
 1. 所谓服务发现就是指客户端从[注册中心](https://so.csdn.net/so/search?q=注册中心&spm=1001.2101.3001.7020)获取记录在注册中心中的服务信息.
 2. NacosReactiveDiscoveryClient进行处理,通过openFlient调用NacosServiceDiscovery#getInstances,
 3. 先从本地缓存中查询服务对应的实例列表，如果本地缓存中没有就会实时的去查询Nacos服务端，最后会开启一个定时任务定时去Nacos服务端查询。
 4. 为了获取实时的服务列表，Nacos客户端不仅有定时任务1秒执行一次去获取服务列表，还开启了一个UDP端口，用于接收Nacos服务端服务实例信息变更的推送。
+5. 总结:启动的时候通过httpClientProxy类调用api,运行的时候通过定时任务没秒进行获取(后面好像删除了HostReactor),还有一个UDP接收推送.
 
 #### 服务端
 
-1. 
+1. Nacos客户端会通过调用接口/nacos/v1/ns/instance/list来查询服务端对应服务的实例列表。
+1. 查询服务的实例列表直接查询的是注册表，不同namespace，不同group之间的service是无法调用的，同一个service下的不同Cluster可以调用。
 
 ### 服务的健康检查
 
-1. 服务的健康检查分为两种模式：
-   - 客户端上报模式：客户端通过心跳上报的方式告知nacos 注册中心健康状态（默认心跳间隔5s，nacos将超过超过15s未收到心跳的实例设置为不健康，超过30s将实例删除）
-   - 服务端主动检测：nacos主动检查客户端的健康状态（默认时间间隔20s，健康检查失败后会设置为不健康，不会立即删除）
+#### 服务端
+
+1. 启动的时候开启了心跳监测任务ClientBeatCheckTask, 遍历服务中的所有实例，如果[心跳](https://so.csdn.net/so/search?q=心跳&spm=1001.2101.3001.7020)时间超过15s就将健康状态标记为false，如果心跳时间超过30s就会删除实例。
+2. 将健康状态标记为false时会发布InstanceHeartbeatTimeoutEvent和ServiceChangeEvent两个事件。InstanceHeartbeatTimeoutEvent没有地方监听此事件。ServiceChangeEvent由本身发布事件的PushService监听.
+3. 健康状态标记为false,会将此服务在注册列表中删除.
+4. PushService监听了ServiceChangeEvent事件。当服务变更时，Nacos服务端会通过**UDP**通知所有监听此服务的客户端。这里为了使客户端能够实时的知道服务的实例状态变更了，又为了不增加服务器的压力，所以使用了UDP，因为UDP不需要建立连接，直接发送一个报文即可，不管客户端有没有收到。即使客户端没有收到，客户端也有一个定时任务每隔5s来查询服务的实例列表。
