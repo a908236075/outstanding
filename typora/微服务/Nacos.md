@@ -276,7 +276,7 @@ public void run() {
 
 ### 服务的发现
 
-#### 客户端
+#### 客户端 :
 
 1. 所谓服务发现就是指客户端从[注册中心](https://so.csdn.net/so/search?q=注册中心&spm=1001.2101.3001.7020)获取记录在注册中心中的服务信息.
 2. NacosReactiveDiscoveryClient进行处理,通过openFlient调用NacosServiceDiscovery#getInstances,
