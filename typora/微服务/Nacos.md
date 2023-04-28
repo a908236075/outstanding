@@ -276,13 +276,15 @@ public void run() {
 
 ### 服务的发现
 
-#### 客户端(服务消费者)
+#### 客户端
 
 1. 所谓服务发现就是指客户端从[注册中心](https://so.csdn.net/so/search?q=注册中心&spm=1001.2101.3001.7020)获取记录在注册中心中的服务信息.
 2. NacosReactiveDiscoveryClient进行处理,通过openFlient调用NacosServiceDiscovery#getInstances,
-3. 先从本地缓存中查询服务对应的实例列表，如果本地缓存中没有就会实时的去查询Nacos服务端，最后会开启一个定时任务定时去Nacos服务端查询。
-4. 为了获取实时的服务列表，Nacos客户端不仅有定时任务1秒执行一次去获取服务列表，还开启了一个UDP端口，用于接收Nacos服务端服务实例信息变更的推送。
-5. 总结:启动的时候通过httpClientProxy类调用api,运行的时候通过定时任务没秒进行获取(后面好像删除了HostReactor),还有一个UDP接收推送.
+3. NacosNamingService会对实例列表进行简单的选择(NacosNamingService#selectInstances),**实际开发过程中实例的选择是由Ribbon或者LoadBalancer实现。**Nacos服务端会返回所有的实例列表，包含不健康状态的实例，具体要不要选择不健康的实例由客户端决定。
+
+4. 先从本地缓存中查询服务对应的实例列表(HostReactor#getServiceInfo)，如果本地缓存中没有就会实时的去查询Nacos服务端，最后会开启一个定时任务定时去Nacos服务端查询。
+5. 为了获取实时的服务列表，Nacos客户端不仅有定时任务1秒执行一次去获取服务列表，还开启了一个UDP端口，用于接收Nacos服务端服务实例信息变更的推送。
+6. 总结:启动的时候通过httpClientProxy类调用api,运行的时候通过定时任务每秒进行获取,还有一个UDP接收推送.
 
 #### 服务端
 
@@ -297,3 +299,22 @@ public void run() {
 2. 将健康状态标记为false时会发布InstanceHeartbeatTimeoutEvent和ServiceChangeEvent两个事件。InstanceHeartbeatTimeoutEvent没有地方监听此事件。ServiceChangeEvent由本身发布事件的PushService监听.
 3. 健康状态标记为false,会将此服务在注册列表中删除.
 4. PushService监听了ServiceChangeEvent事件。当服务变更时，Nacos服务端会通过**UDP**通知所有监听此服务的客户端。这里为了使客户端能够实时的知道服务的实例状态变更了，又为了不增加服务器的压力，所以使用了UDP，因为UDP不需要建立连接，直接发送一个报文即可，不管客户端有没有收到。即使客户端没有收到，客户端也有一个定时任务每隔5s来查询服务的实例列表。
+
+## 服务消费
+
+### 基本概念
+
+1. 根据负载均衡发生位置的不同,一般分为**服务端负载均衡和客户端负载均衡**。 服务端负载均衡指的是发生在服务提供者一方,比如常见的nginx负载均衡 而客户端负载均衡指的是发生在服务请求的一方，也就是在发送请求之前已经选好了由哪个实例处理请 求。我们在微服务调用关系中一般会选择**客户端**负载均衡.
+2. 客户端是引入了discover的后台,与之相对应的是Nacos的服务端.
+
+### 服务订阅
+
+1. ![](..\picture\微服务\Nacos_服务订阅.png)
+2. 通过请求流程图我们发现, 在创建serviceId的上下文时，加载了类RibbonNacosAutoConfiguration 该类又会触发 NacosRibbonClientConfiguration类的加载
+3. NacosRibbonClientConfiguration 会自动创建NacosServerList**,NacosServer可以理解为客户端从注册中心获取的服务信息NacosService.**
+4. 负载均衡是怎么更新服务列表的:负载均衡器ZoneAwareLoadBalancer 在初始化时调用了父类DynamicServerListLoadBalancer的 serverListUpdater.start(updateAction)方法,该方法30秒执行一次NacosServerList.getUpdatedListOfServer方法.
+
+## 重要组件
+
+1. NacosNamingService
+   1. ![](..\picture\微服务\Nacos_NacosNamingService.png)
