@@ -4,7 +4,7 @@
 
 ### 客户端
 
-1. **注册监听器**,监听器的注册在**ClientWorker**中处理，这块会创建一个**CacheData**对象.创建的CacheData缓存到ClientWorker中的一个Map中.
+1. **注册监听器**,监听器的注册在**ClientWorker**中处理，这块会创建一个**CacheData**对象(它包含了服务的基本信息，比如服务名、IP地址、端口号、健康状态、权重、集群等信息).创建的CacheData缓存到ClientWorker中的一个ConcurrentHashMap中,其中的key是通过服务名和集群名共同组成的.
 2. ClientWorker的构造函数里会去创建两个线程池，executor会每隔10ms进行一次配置变更的检查，executorService主要是用来处理**长轮询**请求的。
 3. checkUpdateDataIds()该方法中，会将所有的dataId按定义格式拼接出一个字符串，构造一个长轮询请求，发给服务端，Long-Pulling-Timeout 超时时间默认30s，如果服务端没有配置变更，则会保持该请求直到超时，有配置变更则直接返回有变更的**dataId列表**。
 4. 根据返回的dataId列表,用checkUpdateConfigStr()发起HTTP接口`/v1/cs/configs/listener`的调用。
@@ -58,6 +58,9 @@ public void run() {
 #### 配置变更通知客户端
 
 1. publishConfig()会将配置保存到数据库中，并发布ConfigDataChangeEvent事件。通知所有节点配置变更通知.
+2. AsyncNotifyService监听了ConfigDataChangeEvent事件，然后提交了AsyncTask任务来对Nacos集群中的节点进行通知配置的变化.
+2. AsyncTask.run()会调用Nacos集群中的所有节点（包含自己）的Http接口/v1/cs/communication/dataChange来通知配置的变化。
+2. notifyConfigInfo()主要负责将变化的配置从数据库中查询出来，然后更新本地的文件。
 2. dump()会将新的配置写入磁盘文件，更新md5，然后发布LocalDataChangeEvent事件。
 3. LongPollingService会监听LocalDataChangeEvent事件，然后提交DataChangeTask。
 4. DataChangeTask会找到监听这个配置的客户端，然后进行通知。
@@ -279,7 +282,7 @@ public void run() {
 #### 客户端 :
 
 1. 所谓服务发现就是指客户端从[注册中心](https://so.csdn.net/so/search?q=注册中心&spm=1001.2101.3001.7020)获取记录在注册中心中的服务信息.
-2. NacosReactiveDiscoveryClient进行处理,通过openFlient调用NacosServiceDiscovery#getInstances,
+2. NacosReactive**Discovery**Client进行处理,通过openFent调用NacosServiceDiscovery#getInstances,
 3. NacosNamingService会对实例列表进行简单的选择(NacosNamingService#selectInstances),**实际开发过程中实例的选择是由Ribbon或者LoadBalancer实现。**Nacos服务端会返回所有的实例列表，包含不健康状态的实例，具体要不要选择不健康的实例由客户端决定。
 
 4. 先从本地缓存中查询服务对应的实例列表(HostReactor#getServiceInfo)，如果本地缓存中没有就会实时的去查询Nacos服务端，最后会开启一个定时任务定时去Nacos服务端查询。
@@ -318,3 +321,103 @@ public void run() {
 
 1. NacosNamingService
    1. ![](..\picture\微服务\Nacos_NacosNamingService.png)
+
+## 实战问题
+
+1. Nacos的架构是怎样的？它有哪些重要组件？
+
+   - Nacos是一个分布式的、高可用的服务发现和配置管理系统，它的架构主要由以下四个组件构成：
+
+     1. Naming Service（命名服务）：负责服务的注册、发现和注销等功能。
+     2. Configuration Service（配置服务）：提供动态配置管理功能，支持各种数据格式的配置信息。
+     3. Cluster Manager（集群管理）：负责集群节点的管理和调度，实现高可用、负载均衡和故障转移等功能。
+     4. Console（控制台）：提供Web界面，用于对Nacos的各项功能进行管理和监控。
+
+     其中，Naming Service和Configuration Service是Nacos的核心组件，主要用于服务的注册和配置管理。Cluster Manager用于实现高可用和负载均衡，保证服务的稳定性和可靠性。而Console则提供了对Nacos的可视化管理界面，便于用户进行服务管理和配置管理等操作。
+
+     在Nacos的架构中，Naming Service和Configuration Service都是基于Raft协议实现的分布式一致性算法，使用Raft协议可以保证系统的高可用性和数据的一致性。而Cluster Manager则使用基于选举的Leader/Follower模式实现，通过选举Leader节点来保证系统的高可用性和负载均衡。
+
+2. Nacos如何实现配置服务？
+
+   1. 客户端
+
+      - 注册监听器,在ClientWorker中实现监听过程,创建一个cacheData对象,这个对象包含服务名,服务名、IP地址、端口号、健康状态权重集群等信息,保存在ConcurrentHashMap,其中的key是通过服务名和集群名共同组成的.
+      - ClientWorker会创建线程池,线程池会没10ms调用一次长轮询(有配置更新直接返回,没有配置更新的时候到间隔时间后返回)的配置更新检查任务,长轮询的默认返回时间是30s,10ms的设置保证了更新的及时性.
+      - 如果有更新返回dataId,客户端通过此参数调用nacos的config/listen 接口,获取配合文件内容.
+      - checkListenerMd5()主要就是判断两个**md5**是不是相同，不同更新**lastContent**、**lastCallMd5**字段。
+      - **为什么长轮询任务不会积压:**
+        1. 不会导致大量长轮询任务积压的原因是,长轮询任务并非每次都是30s才返回,如果有更新会立即返回.但是不是主要的原因.
+        2. 如果配置没有更新的情况下,单看一个任务的执行还是30s返回,其实压力还是在服务端,服务端采用到了队列加缓存的方式,当检测到有配置更新的时候直接返回给客户端,当遇到变更时,会应答当前时间之前未超时的所有的任务,等于说一个返回,就会将数成千上万个请求返回.
+        3. 服务端采取了异步执行,也是创建了29.5s的周期任务,同时采用了缓存+队列+线程池等技术,保证了节点的性能.
+
+   2. 服务端
+
+      1. 处理长轮询请求:
+         - 启动一个定时任务29.5s,如果配置没有变更(其实是等待DataChangeTask)，**任务就会执行，对客户端进行响应空值**，如果30s内配置发生了变更，此任务就会被取消。客户端的请求会放在**allSubs**的队列中.
+         - generateResponse()会将变更配置的**dataId和group**新信息返回给客户端，**并不会返回具体的配置内容**，内容会由客户端来查询。
+         - 当配置变更会触发publishConfig方法,触发ConfigDataChangeEvent监听事件,通过异步任务进行配置文件更新操作.
+         - AsyncTask.run() 会通知所有节点(包括它自己)配置文件改变.
+         - notifyConfigInfo()主要负责将变化的配置从数据库中查询出来，然后更新本地的文件。
+         - dump()会将新的配置写入磁盘文件，更新md5，然后发布LocalDataChangeEvent事件。
+         - 最后触发DataChangeTask会找到监听这个配置的客户端，然后进行通知。
+      2. 客户端直接获取
+         - **JDK的零拷贝**的方式 直接返回配置文件内容
+
+3. 服务的注册
+
+   1. 客户端将ip,端口号,服务名,分组名进行封装,使用NacosServiceRegistry注册.会通过接口调用的方式进行注册.而且NacosNamingService通过通过groupname + servicename构建一个心跳任务,这个是注册时候的心跳将会将整个beatInfo(ip,端口号,分组,权重等)对象发送给服务端.
+   2. 服务端通过ServiceManager进行管理,是将instance转变为一个Service并封装在Map中,key是通过namespace,serviceName生成的,比较ip,如果相同进行替换.并添加一个实例变更的任务,实例变更的任务通过异步的Notifier#run方法进行更新处理的.核心的任务是将实例instance封装在Service里面更新服务.将缓存中获取的实例列表按clusterName进行分组，最后以cluster为维度进行更新注册表。更新的是实例的状态,这个用到的是CopyOnWrite机制.
+   3. 服务端怎么保证注册表的高并发读和写？
+   
+      1. 注册表的写是异步的，而且是通过一个任务来执行，这样保证只有一个线程进行写，不会有并发。
+      2. 写注册表时是使用新的对象直接覆盖原来的引用，类似CopyOnWrite机制，不影响读。
+      3. CopyOnWrite其核心概念就是：  数据读取时直接读取，不需要锁，数据写入时，需要锁，且对副本进行操作。那么当数据的操作以读取为主时，我们便可以省去大量的读锁带来的消耗。同时为了能让多线程操作List时，一个线程的修改能被另一个线程立马发现，CopyOnWriteList采用了Volatile关键词来进行修饰，复制副本进行数据更改,更改后将副本传值给Volatile修饰的变量.
+   
+4. 服务发现
+
+   1. 客户端
+      1. 所谓服务发现就是指客户端从[注册中心](https://so.csdn.net/so/search?q=注册中心&spm=1001.2101.3001.7020)获取记录在注册中心中的服务信息.
+      2. NacosReactiveDiscoveryClient进行处理,通过openFlient调用NacosServiceDiscovery#getInstances,
+      3. NacosNamingService会对实例列表进行简单的选择(NacosNamingService#selectInstances),**实际开发过程中实例的选择是由Ribbon或者LoadBalancer实现。**Nacos服务端会返回所有的实例列表，包含不健康状态的实例，具体要不要选择不健康的实例由客户端决定。
+
+      4. 先从本地缓存中查询服务对应的实例列表(HostReactor#getServiceInfo)，如果本地缓存中没有就会实时的去查询Nacos服务端，最后会开启一个定时任务定时去Nacos服务端查询。
+      5. 为了获取实时的服务列表，Nacos客户端不仅有定时任务每秒执行一次去获取服务列表，还开启了一个UDP端口，用于接收Nacos服务端服务实例信息变更的推送。
+      6. 总结:启动的时候通过httpClientProxy类调用api,运行的时候通过定时任务每秒进行获取,还有一个UDP接收推送.
+   2. 服务端
+      1. Nacos客户端会通过调用接口/nacos/v1/ns/instance/list来查询服务端对应服务的实例列表。
+      2. 查询服务的实例列表直接查询的是注册表，不同namespace，不同group之间的service是无法调用的，同一个service下的不同Cluster可以调用。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
