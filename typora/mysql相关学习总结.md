@@ -41,12 +41,12 @@
    10. Left(str,length),Right(str,length),substring(str,pos,length).截取字符串.
 
    11. CASE WHEN函数   END 
-   
+
        1. CASE   
           WHEN [condititonal test 1] THEN [result1] 
-       WHEN [condititonal test 2] THEN [result2] 
+          WHEN [condititonal test 2] THEN [result2] 
           ELSE [result3] 
-   
+
           END
 
 3. ### Sql语句进阶
@@ -75,7 +75,7 @@
    10. 关联子查询和自连接在很多时候都是等价的.
    11. group by 分组后会形成新的视图,通常不能沿用原表的索引.所以使用where代替Having可是是性能更好.
    12. !=和not in 不能用到索引.
-   
+
 4. ### Sql 练习语句
 
    1. ~~~sql
@@ -119,4 +119,11 @@
       SELECT P1.name, P2.name FROM products P1 LEFT OUTER JOIN  products P2 ON P2.price >P1.price;
       ~~~
 
-   2. 
+
+## 	MVCC
+
+1. 多版本并发控制,mysql每次查询的结果有3列隐藏列,分别是事务id,回滚段的指针和主键.undolog日志记录了回滚段的数据.数据结构也与当前行数据结构一致.
+2. 在 RC 隔离级别下，每个 SELECT 语句开始时，都会重新将当前系统中的所有的活跃事务拷贝到一个列表生成  ReadView。RC与RR的区别就在于生成 ReadView 的时间点不同，RR是事务之后第一个 SELECT 语句开始、RC是事务中每条  SELECT 语句开始。
+3. select时候,会维护一个事物列表,包含最小事物id,活跃事物id,最大事物id.最小事务是已提交的事务,最大的事务是已出现事物的下一个事务.
+4. `Read View`遵循一个可见性算法，主要是将`要被修改的数据`的最新记录中的`DB_TRX_ID`（即当前事务ID）取出来，与系统当前其他活跃事务的ID去对比（由Read View维护）.
+5. MVCC只影响读已提交,可重复读的事务隔离级别,查询事务的id与事务列表进行比较,小于最小事务id,则数据可见,大于最大事物或者不在活跃的事务中,则去undolog日志中取前事务的id进行比较.来做可见性的判断.
