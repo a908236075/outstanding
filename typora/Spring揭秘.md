@@ -733,16 +733,61 @@
 
 ## 常见问题
 
-1. Spring怎么解决循环依赖?
+1. 循环依赖
 
-   1. 使用三级缓存:
-      1. 一级缓存:singletonObjects:保存了完成初始化的对象
-      2. 二级缓存earlySingletonObjects:保存了出现了循环依赖,并且需要提前给其它类用的类(被AOP).而且保证了每次生成的代理对象都是同一个.
-      3. 三级:singleFactories:提前暴露未初始化完成的对象,避免依赖循环.添加了一个lambda表达式,调用三级缓存,执行lambda表达式,会判断是否被切(AOP),如果被切,就生成代理对象,如果没有就返回原对象.将返回的对象放入到二级缓存中去.
+   1. Spring怎么解决循环依赖?
 
-2. 为什么使用三级缓存,使用二级缓存是否可以?
+      1. 使用三级缓存:
+         1. 一级缓存:singletonObjects:保存了完成初始化的对象
+         2. 二级缓存earlySingletonObjects:保存了出现了循环依赖,并且需要提前给其它类用的类(被AOP).而且保证了每次生成的代理对象都是同一个.
+         3. 三级:singleFactories:提前暴露未初始化完成的对象,避免依赖循环.添加了一个lambda表达式,调用三级缓存,执行lambda表达式,会判断是否被切(AOP),如果被切,就生成代理对象,如果没有就返回原对象.将返回的对象放入到二级缓存中去.
 
-   ​	如果没有AOP使用一个二级缓存就可以,如果为二级缓存是为了当类没有初始化完成,提前进行了AOP,保证拿到的是同一个代理对象.
+   2. 为什么使用三级缓存,使用二级缓存是否可以?
 
-3. 为什么不能解决构造方法的循环依赖?
-   1. 
+      ​	如果没有AOP使用一个二级缓存就可以,如果为二级缓存是为了当类没有初始化完成,提前进行了AOP,保证拿到的是同一个代理对象.
+
+   3. 为什么不能解决构造方法和多例的循环依赖?
+
+      ​	通过缓存直接暴露,而多例每次都创建一个新的对象,构造方法直接的依赖实例Bean,都没有提前暴露的条件.
+
+      ​	使用@lazy进行注释,当出现依赖实际是创建了一个代理类,A依赖B1(代理类) , B依赖A 就不会出现循环依赖了.
+
+2. Bean的生命周期![](.\picture\spring揭秘\Bean的生命周期.png)
+
+   1. 实例化(Instantiation)
+
+      1.   对于[BeanFactory](https://so.csdn.net/so/search?q=BeanFactory&spm=1001.2101.3001.7020)容器，当客户向容器请求一个尚未初始化的bean时，或初始化bean的时候需要注入另一尚未初始化的依赖时，容器会调用createBean进行实例化。
+
+      2. 对于ApplicationContext容器，当容器启动结束后，通过获取[BeanDefinition](https://so.csdn.net/so/search?q=BeanDefinition&spm=1001.2101.3001.7020)对象中的信息，实例化所有的bean。
+
+   2. 属性设置(populate)
+
+      1.  实例化后的对象被封装在BeanWrapper对象中，Spring根据BeanDefinition中的信息以及通过BeanWrapper提供的设置属性的接口完成**属性设置与依赖注入**。主要是依赖属性的处理,例如实例化A,发现A依赖B,怎会先处理B,将B创建好后进行属性的设置.
+
+   3. **BeanPostProcessor前置处理**
+
+      1. 如果想对Bean进行一些自定义的前置处理，那么可以让Bean实现了BeanPostProcessor接口，那么将会调用postProcessBeforeInitializ（Object obj，String s）方法。
+
+   4. **InitialzingBean**
+
+      ​    如果Bean实现了InitialzingBean接口，执行afterPropertiesSet()方法。
+
+   5. **init-method**
+
+      ​    如果Bean在Spring配置文件中配置了init-method属性，则会自动调用其配置的初始化方法。
+
+   6. **BeanPostProcessor后置处理**
+
+      ​    以上几个步骤完成后，Bean已经正确创建。
+
+      ​    如果这个Bean实现了BeanPostProcessor接口，将会调用postProcessAfterInitiazation（Object obj，String s）方法，由于这个方法是在Bean初始化结束时调用，所以可以被应用于内存或缓存技术；
+
+   7. **DisposableBean**
+
+      ​    当Bean不再需要时，会经过清理阶段，如果Bean实现了DisposableBean这个接口，会调用其实现的destroy（）方法；
+
+   8. **destory-method**
+
+      ​    最后，如果这个Bean的Spring配置中配置了destroy-method属性，会自动调用其配置的销毁方法。
+
+      
