@@ -1307,9 +1307,16 @@ kill -9 12533
 1. ~~~shell
    ## 远程拷贝
    scp -r 本地目录  用户@ip地址:文件路径
-   
+   ## 进程占用cup或者内存排序
+   ps aux --sort cpu | head -5
+   ps aux --sort pmem | head -5
+   USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+   root         2  0.0  0.0      0     0 ?        S     2022   0:15 [kthreadd]
+   root         4  0.0  0.0      0     0 ?        S<    2022   0:00 [kworker/0:0H]
+   root         6  0.0  0.0      0     0 ?        S     2022   0:10 [ksoftirqd/0]
+   root         7  0.0  0.0      0     0 ?        S     2022   0:11 [migration/0]
    ~~~
-
+   
 2. 
 
 

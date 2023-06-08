@@ -12,11 +12,12 @@
    docker container ls //查看正在运行的容器
    docker rm 容器ID //只能删除没有在运行的容器
    docker rm -f 容器ID //可以删除正在运行的容器
-   docker run -p 本地主机端口号:容器服务端口号 --name 容器名字 [-e 配置信息修改] -d 镜像名字
+   docker run -p 本地主机端口号:容器服务端口号 --name 容器名字 [-e 配置信息修改] -d 镜像名字   -d表示后台启动
    docker start 容器ID //启动容器
    docker stop 容器ID //终止容器
    docker rmi 镜像名称orID //删除镜像
    docker exec -it topisa /bin/bash
+   docker logs -f  容器ID  // 查看容器日志
    ##查询端口号占用
    ss -antulp | grep POR 看下监听端口或者ps看见jboss相关进程
    ##添加端口对外映射

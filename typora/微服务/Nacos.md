@@ -341,8 +341,8 @@ public void run() {
 
    1. 客户端
 
-      - 注册监听器,在ClientWorker中实现监听过程,创建一个cacheData对象,这个对象包含服务名,服务名、IP地址、端口号、健康状态权重集群等信息,保存在ConcurrentHashMap,其中的key是通过服务名和集群名共同组成的.
-      - ClientWorker会创建线程池,线程池会没10ms调用一次长轮询(有配置更新直接返回,没有配置更新的时候到间隔时间后返回)的配置更新检查任务,长轮询的默认返回时间是30s,10ms的设置保证了更新的及时性.
+      - 注册监听器,在**ClientWorker**中实现监听过程,创建一个**cacheData**对象,这个对象包含服务名,服务名、IP地址、端口号、健康状态权重集群等信息,保存在ConcurrentHashMap,其中的key是通过服务名和集群名共同组成的.
+      - **ClientWorker**会创建线程池,线程池会每10ms调用一次**长轮询**(有配置更新直接返回,没有配置更新的时候到间隔时间后返回)的配置更新检查任务,长轮询的默认返回时间是30s,10ms的设置保证了更新的及时性.
       - 如果有更新返回dataId,客户端通过此参数调用nacos的config/listen 接口,获取配合文件内容.
       - checkListenerMd5()主要就是判断两个**md5**是不是相同，不同更新**lastContent**、**lastCallMd5**字段。
       - **为什么长轮询任务不会积压:**
@@ -365,9 +365,10 @@ public void run() {
 
 3. 服务的注册
 
-   1. 客户端将ip,端口号,服务名,分组名进行封装,使用NacosServiceRegistry注册.会通过接口调用的方式进行注册.而且NacosNamingService通过通过groupname + servicename构建一个心跳任务,这个是注册时候的心跳将会将整个beatInfo(ip,端口号,分组,权重等)对象发送给服务端.
-   2. 服务端通过ServiceManager进行管理,是将instance转变为一个Service并封装在Map中,key是通过namespace,serviceName生成的,比较ip,如果相同进行替换.并添加一个实例变更的任务,实例变更的任务通过异步的Notifier#run方法进行更新处理的.核心的任务是将实例instance封装在Service里面更新服务.将缓存中获取的实例列表按clusterName进行分组，最后以cluster为维度进行更新注册表。更新的是实例的状态,这个用到的是CopyOnWrite机制.
-   3. 服务端怎么保证注册表的高并发读和写？
+   1. AbstractAutoServiceRegistration实现了ApplicationListener接口,容器启动后开始注册
+   2. 客户端将ip,端口号,服务名,分组名进行封装,使用**NacosServiceRegistry**注册.会通过接口调用的方式进行注册.而且NacosNamingService通过通过groupname + servicename构建一个心跳任务**BeatReactor**(每5s发送一次),这个是注册时候的心跳将会将整个beatInfo(ip,端口号,分组,权重等)对象发送给服务端.
+   3. 服务端通过ServiceManager进行管理,是将instance转变为一个Service并封装在Map中,key是通过namespace,serviceName生成的,比较ip,如果相同进行替换.并添加一个实例变更的任务,实例变更的任务通过异步的**Notifier**#run方法进行更新处理的.核心的任务是将实例instance封装在Service里面更新服务.将缓存中获取的实例列表按clusterName进行分组，最后以cluster为维度进行更新注册表。更新的是实例的状态,这个用到的是CopyOnWrite机制.
+   4. 服务端怎么保证注册表的高并发读和写？
    
       1. 注册表的写是异步的，而且是通过一个任务来执行，这样保证只有一个线程进行写，不会有并发。
       2. 写注册表时是使用新的对象直接覆盖原来的引用，类似CopyOnWrite机制，不影响读。
@@ -377,7 +378,7 @@ public void run() {
 
    1. 客户端
       1. 所谓服务发现就是指客户端从[注册中心](https://so.csdn.net/so/search?q=注册中心&spm=1001.2101.3001.7020)获取记录在注册中心中的服务信息.
-      2. NacosReactiveDiscoveryClient进行处理,通过openFlient调用NacosServiceDiscovery#getInstances,
+      2. **NacosReactiveDiscoveryClient**进行处理,通过openFlient调用NacosServiceDiscovery#getInstances,
       3. NacosNamingService会对实例列表进行简单的选择(NacosNamingService#selectInstances),**实际开发过程中实例的选择是由Ribbon或者LoadBalancer实现。**Nacos服务端会返回所有的实例列表，包含不健康状态的实例，具体要不要选择不健康的实例由客户端决定。
 
       4. 先从本地缓存中查询服务对应的实例列表(HostReactor#getServiceInfo)，如果本地缓存中没有就会实时的去查询Nacos服务端，最后会开启一个定时任务定时去Nacos服务端查询。
