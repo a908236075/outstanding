@@ -77,7 +77,6 @@ sudo iptables -t nat -D DOCKER 3
       docker load -i xxx.tar   
       ~~~
 
-
 ## 核心原理
 
 ### 底层存储
@@ -134,13 +133,13 @@ sudo iptables -t nat -D DOCKER 3
 
    1. 基础构建
 
-      FROM 指定基础镜像 是什么环境就用什么
+      **FROM** 指定基础镜像 是什么环境就用什么
 
-      LABLE 标签
+      **LABLE** 标签
 
-      RUN 容器构建时候执行的命令
+      **RUN** 容器构建时候执行的命令
 
-      CMD 容器启动的时候执行的命令
+      **CMD** 容器启动的时候执行的命令
 
    2. ARG
 
@@ -174,5 +173,115 @@ sudo iptables -t nat -D DOCKER 3
             ## 运行时修改msg1 只能msg1生效  msg2由于读取的事持久化在文件中的变量的值,所以不会改变.
             ~~~
 
-         3. 
+      6. 构建命令
+
+         1. ~~~shell
+            docker build --no-chache -t demo:test -f Dockerfile
+            ~~~
+
+   4. ADD和COPY命令
+
+      1. ~~~dockerfile
+         ADD https:://download.redis.xxx.tar.gz /dest/   # 从网址上下载 到/dest目录 
+         
+         Run cd /dest && ls -l    # 注意 RUN命令不是上下文的关系 如果两个命令有关联用&&连接  
+         ~~~
+
+      2. COPY 不会自动解压和下载 是从宿主机上复制
+
+         1. ~~~dockerfile
+            USER root:root    # 后面的命令使用root用户来运行.
+            USER 1000:1000    # 后面的命令使用1000编号对应的用户来运行.
+            ~~~
+
+      3. WORKDIR
+
+         1. WORKDIR为下面的命令指定目录.可以嵌套.
+         2. 当进入容器控制台时候,直接进入指定目录.
+
+      4. VOLUME 
+
+         1. ~~~dockerfile
+            VOLUME ["/hello","/app"] 
+            ~~~
+
+         2. 即使没有指定-v参数,也会匿名自动挂载.
+
+         3. 已经挂载的目录,之后在对目录操作(例如:目录下文件内容的更改),是无效的.先修改在挂载.
+
+      5. EXPOSE 
+
+      6. ENTRYPOINT和CMD
+
+         1. ENTRYPOINT 是启动命令 一般都是固定的.
+
+         2. 都会覆盖,最后一个生效.
+
+         3. ~~~dockerfile
+            FROM alpine
+            ENV url=baidu.com
+            CMD ["/bin/sh","-c","ping ${url}"]  ## -c 作为一整串字符串, 推荐这种写法.
+            ~~~
+
+         4. ENTRYPOINT 是容器启动的唯一入口,CMD提供参数.如果想输入参数,整个CMD都会覆盖.
+
+      7.  多阶段构建
+
+         1. ~~~dockerfile
+            FROM alpine AS buildapp
+            ## 把上一个阶段的东西复制过来
+            COPY --from=buildapp /app.jar /app.jar
+            ~~~
+
+
+## DockerFile
+
+1. 瘦身
+
+   1. run 可以使用&&合并在一起写 
+   2. 添加.dockerignore文件
+   3. 对阶段构建
+
+2. touch命令
+
+   1. 记录保存的时间点.
+
+3. 网络
+
+   1. 桥接网络.通过主机与docker0网关做转发.
+
+   2. ~~~shell
+      iptables -nL   ## 端口对应的映射关系  8007映射到 172.18.0.3 这个地址
+      Chain DOCKER (2 references)
+      target     prot opt source               destination         
+      ACCEPT     tcp  --  0.0.0.0/0            172.18.0.2           tcp dpt:27017
+      ACCEPT     tcp  --  0.0.0.0/0            172.18.0.3           tcp dpt:8007
+      ACCEPT     tcp  --  0.0.0.0/0            172.17.0.2           tcp dpt:18083
+      ACCEPT     tcp  --  0.0.0.0/0            172.17.0.2           tcp dpt:8883
+      ACCEPT     tcp  --  0.0.0.0/0            172.17.0.2           tcp dpt:1883
+      ~~~
+
+   3. ~~~shell
+       ip addr    ## ip列表
+       docker0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
+          link/ether xx:42:76:xx:76:98 brd ff:ff:ff:ff:ff:ff
+          inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+             valid_lft forever preferred_lft forever
+          inet6 fe80::42:76ff:feef:7698/64 scope link 
+             valid_lft forever preferred_lft forever
+      4: br-92b6bbcd9: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
+          link/ether 02:42:a1:86:62:8d brd ff:ff:ff:ff:ff:ff
+          inet 172.18.0.1/16 brd 172.18.255.255 scope global br-92b69fd75c19
+             valid_lft forever preferred_lft forever
+          inet6 fexxx::42:a1ff:fe86:628d/64 scope link 
+             valid_lft forever preferred_lft forever
+      14: vethae1ddasa29@if13: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue master br-92b69fd75c19 state UP group default 
+          link/ether 02:..80 brd ff:ff:ff:ff:ff:ff link-netnsid 0
+          inet6 fe80::f:3eff:fe42:2280/64 scope link 
+             valid_lft forever preferred_lft forever
+      ~~~
+
+   4. 
+
+   5. 
 
