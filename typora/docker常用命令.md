@@ -248,9 +248,11 @@ sudo iptables -t nat -D DOCKER 3
 
 3. 网络
 
-   1. 桥接网络.通过主机与docker0网关做转发.
+   1. ![](..\typora\picture\云原生\docker网络.jpg)
 
-   2. ~~~shell
+   2. 桥接网络.通过主机与docker0网关做转发.
+   
+   3. ~~~shell
       iptables -nL   ## 端口对应的映射关系  8007映射到 172.18.0.3 这个地址
       Chain DOCKER (2 references)
       target     prot opt source               destination         
@@ -260,15 +262,15 @@ sudo iptables -t nat -D DOCKER 3
       ACCEPT     tcp  --  0.0.0.0/0            172.17.0.2           tcp dpt:8883
       ACCEPT     tcp  --  0.0.0.0/0            172.17.0.2           tcp dpt:1883
       ~~~
-
-   3. ~~~shell
-       ip addr    ## ip列表
-       docker0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
-          link/ether xx:42:76:xx:76:98 brd ff:ff:ff:ff:ff:ff
-          inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
-             valid_lft forever preferred_lft forever
-          inet6 fe80::42:76ff:feef:7698/64 scope link 
-             valid_lft forever preferred_lft forever
+   
+   4. ~~~shell
+      ip addr    ## ip列表
+      docker0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
+         link/ether xx:42:76:xx:76:98 brd ff:ff:ff:ff:ff:ff
+         inet 172.17.0.1/16 brd 172.17.255.255 scope global docker0
+            valid_lft forever preferred_lft forever
+         inet6 fe80::42:76ff:feef:7698/64 scope link 
+            valid_lft forever preferred_lft forever
       4: br-92b6bbcd9: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default 
           link/ether 02:42:a1:86:62:8d brd ff:ff:ff:ff:ff:ff
           inet 172.18.0.1/16 brd 172.18.255.255 scope global br-92b69fd75c19
@@ -281,7 +283,35 @@ sudo iptables -t nat -D DOCKER 3
              valid_lft forever preferred_lft forever
       ~~~
 
-   4. 
-
-   5. 
+   5. docker0网络的特点。，
+       默认、域名访问不通、--link 域名通了，但是删了又不行,可以让容器创建的时候使用自定义网络，用自定义 
+   
+       1. 自定义创建的默认default "bridge"
+   
+       2. 自定义创建一个网络网络
+           ~~~shell
+           docker network create --driver bridge --subnet 192.168.0.0/16 --gateway 192.168.0.1 mynet
+           ## 检查能否ping通
+           docker network connect [OPTIONS] NETWORK CONTAINER
+           ~~~
+   
+   6. 跨网络连接别人就用。把tomcat加入到mynet网络
+   
+       1. ~~~shell
+           docker network connect mynet tomcat
+           ~~~
+   
+       2. 效果：
+           1、自定义网络，默认都可以用主机名访问通
+           2、跨网络连接别人就用 docker network connect mynet tomcat
+   
+   7. 命令
+   
+       1. 容器启动，指定容器ip。 docker run --ip 192.168.0.3 --net 自定义网络
+   
+       2. 创建子网。docker network create --subnet 指定子网范围 --driver bridge 所有东西实时维护好，直接域名ping通
+   
+       3. docker compose 中的网络默认就是自定义网络方式。
+           docker run -d -P --network 自定义网络名(提前创建)  
+   
 
