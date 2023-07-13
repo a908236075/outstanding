@@ -308,10 +308,23 @@ sudo iptables -t nat -D DOCKER 3
    7. 命令
    
        1. 容器启动，指定容器ip。 docker run --ip 192.168.0.3 --net 自定义网络
-   
        2. 创建子网。docker network create --subnet 指定子网范围 --driver bridge 所有东西实时维护好，直接域名ping通
-   
        3. docker compose 中的网络默认就是自定义网络方式。
            docker run -d -P --network 自定义网络名(提前创建)  
    
-
+   8. Docker 构建
+   
+       1.  ~~~sh
+            ## Dockerfile
+            FROM java:8
+            COPY dockerpractice-0.0.1-SNAPSHOT.jar app.jar
+            EXPOSE 8989
+            ENTRYPOINT ["java","-jar","/app.jar"]
+            ## 构建镜像
+            docker build -t dockertest:v8 -f Dockerfile .
+            ## 构建容器
+            docker run -p 8080:8080 --name dockerName1 dockertest:v8
+            ## 启动容器
+            docker start 37c8a..
+            ~~~
+   
