@@ -1307,6 +1307,7 @@ kill -9 12533
 1. ~~~shell
    ## 远程拷贝
    scp -r 本地目录  用户@ip地址:文件路径
+   scp -r ./Test_V3.074_20230728163657_V2X.bin root@10.7.198.118:/
    ## 进程占用cup或者内存排序
    ps aux --sort cpu | head -5
    ps aux --sort pmem | head -5
@@ -1316,7 +1317,7 @@ kill -9 12533
    root         6  0.0  0.0      0     0 ?        S     2022   0:10 [ksoftirqd/0]
    root         7  0.0  0.0      0     0 ?        S     2022   0:11 [migration/0]
    ~~~
-
+   
 2. ~~~shell
    ## 层层列出文件大小
    du -h -x --max-depth=1  
