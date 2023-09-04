@@ -1317,13 +1317,18 @@ kill -9 12533
    root         6  0.0  0.0      0     0 ?        S     2022   0:10 [ksoftirqd/0]
    root         7  0.0  0.0      0     0 ?        S     2022   0:11 [migration/0]
    ~~~
-   
+
 2. ~~~shell
    ## 层层列出文件大小
    du -h -x --max-depth=1  
    ~~~
 
-3. 
+3. ~~~sh
+   ##递归更改权限
+   chmod -R 755 /home/test
+   ~~~
+
+4. 
 
 
 
