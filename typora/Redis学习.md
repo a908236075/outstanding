@@ -40,7 +40,7 @@ redis-cli --cluster fix 127.0.0.1:7000
 3. 基础数据结构:String,list,hash,set,zset.
    1. String:Redis 的字符串是动态字符串，是可以修改的字符串，内部结构实现上类似于 Java 的
       ArrayList，采用预分配冗余空间的方式来减少内存的频繁分配.
-      
+   
       1. ~~~shell
          # 常用命令
           set name  zhangsan
@@ -60,7 +60,7 @@ redis-cli --cluster fix 127.0.0.1:7000
          incrby age 5 #36
          incrby age -5 # 31
          ~~~
-      
+   
    2. List:相当于 Java 语言里面的 LinkedList，注意它是链表而不是数组,增删快,查找慢.
 
       1. ~~~shell
@@ -185,7 +185,26 @@ redis-cli --cluster fix 127.0.0.1:7000
          ~~~
 
       2. 数据结构:zset 内部的排序功能是通过「跳跃列表」数据结构来实现的,类似于公司的职能部门:
-      
+   
+   6. hyperloglog:存入的数据量非常大,但是基数较少的数据.去重复,不直接存储数据本身,通过牺牲准确性来换取空间.
+   
+      1. ~~~shell
+         PFADD jd 1 2 3  # 向键jd中添加数值 1 2 3
+         PFCOUNT jd # 查询数量
+         PFMERGE result jd1 jd2  #将jd1和jd2的数值相加赋值给result
+         ~~~
+   
+   7. GEO:经纬度存储,底层使用zset实现.经纬度相当于zset的权值.
+   
+      1. ~~~shell
+         GEOADD city 116.4003 39.96543 "天安门" #key为city的 经纬度 值 
+         GEOPOS city 天安门                     # 返回城市天安门的经纬度.
+         1) 116.4003 39.96543
+         GEODIST city 天安门 故宫 m               #返回城市天安门和故宫的距离单位是米.
+         GEORADIUS city 116.4003 39.96543 10 km withdist withcoord withhash count 10                                # 以给定的经纬度为原点,10km为半径 卸载距离,坐标,坐标的hash值 展示前10个.
+         ~~~
+   
+      2. 
 
 ## 应用
 
