@@ -204,6 +204,12 @@ lock.writeLock().unlock();
    }
    ~~~
 
+## Lock与Synchronized锁不同
+
+![](.\picture\JUC\Lock与Synchronized锁区别.png)
+
+
+
 ## 其它知识
 
 1. 重写Thread和重写Runable接口的区别
@@ -213,5 +219,4 @@ lock.writeLock().unlock();
    1. 引入事务,使用Lock 或者 Synchronized
    2. 发现读的时候不需要阻塞,甚至读写的时候需要区别处理,所以引入了读写锁,并设置了可重入的特性.
    3. 一般读多写少,导致写锁饥饿的问题,引入了邮戳锁.
-
 
