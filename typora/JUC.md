@@ -208,7 +208,15 @@ lock.writeLock().unlock();
 
 ![](.\picture\JUC\Lock与Synchronized锁区别.png)
 
+## 线程池
 
+### 实现原理
+
+![](..\typora\picture\JUC\线程池实现原理.png)
+
+### 重要的参数
+
+![](..\typora\picture\JUC\线程池的重要参数.png)
 
 ## 其它知识
 
