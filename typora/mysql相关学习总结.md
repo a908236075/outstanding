@@ -158,7 +158,7 @@
 
 1. B+Tree结构
 
-![](\picture\mysql\B+Tree.png)
+![](.\picture\mysql\B+Tree.png)
 
 2. B-Tree
    1. 
