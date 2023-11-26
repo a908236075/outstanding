@@ -128,20 +128,300 @@ ConsumeMessageThread_please_rename_unique_group_name_4_11 Receive New Messages: 
    </mirrors>
    ~~~
 
-   ## Dashboard安装
 
-   ~~~shell
-   ## 拉镜像
-   docker pull apacherocketmq/rocketmq-dashboard:latest
-   ## 运行
-   docker run -d --name rocketmq-dashboard -e "JAVA_OPTS=-Drocketmq.namesrv.addr=127.0.0.1:9876" -p 8080:8080 -t apacherocketmq/rocketmq-dashboard:latest
-   ~~~
+## Dashboard安装
 
-   
+~~~shell
+## 拉镜像
+docker pull apacherocketmq/rocketmq-dashboard:latest
+## 运行
+docker run -d --name rocketmq-dashboard -e "JAVA_OPTS=-Drocketmq.namesrv.addr=127.0.0.1:9876" -p 8080:8080 -t apacherocketmq/rocketmq-dashboard:latest
+~~~
 
-   
+# 消费生产
 
-   
+**同步发送**:等待消息返回后在继续进行下面的操作.
+
+**异步发送**:不等待消息返回值直接进入后续流程.broker将结果返回后调用callback函数,并使用CountDownLatch进行计数.
+
+**单向发送**:只负责发送,不负责消息是否发送成功.
+
+## 同步发送消息
+
+~~~java
+import com.sun.org.slf4j.internal.Logger;
+import com.sun.org.slf4j.internal.LoggerFactory;
+import org.apache.rocketmq.client.exception.MQBrokerException;
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.client.producer.DefaultMQProducer;
+import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.common.message.Message;
+import org.apache.rocketmq.remoting.exception.RemotingException;
+
+import java.nio.charset.StandardCharsets;
+
+public class ProducerExample {
+
+    private static final Logger logger = LoggerFactory.getLogger(ProducerExample.class);
+
+    public static void main(String[] args) throws MQClientException, RemotingException, InterruptedException, MQBrokerException {
+        String endpoint = "192.168.2.128:9876";
+        String topic = "Simple";
+        DefaultMQProducer producer = new DefaultMQProducer("SyncProducer");
+        producer.setNamesrvAddr(endpoint);
+        producer.start();
+        for (int i = 0; i < 2; i++) {
+            Message message = new Message(topic, "Tags", (i + "_syncProducer").getBytes(StandardCharsets.UTF_8));
+            SendResult sendResult = producer.send(message);
+            System.out.printf(i + "_消息发送成功%s%n", sendResult);
+        }
+        producer.shutdown();
+    }
+
+
+}
+~~~
+
+## 异步发送
+
+~~~java
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.client.producer.DefaultMQProducer;
+import org.apache.rocketmq.client.producer.SendCallback;
+import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.common.message.Message;
+import org.apache.rocketmq.remoting.exception.RemotingException;
+
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.CountDownLatch;
+
+public class AsyncProducer {
+    public static void main(String[] args) throws MQClientException, RemotingException, InterruptedException {
+        DefaultMQProducer producer = new DefaultMQProducer("AsyncProducer");
+        producer.setNamesrvAddr("192.168.2.128:9876");
+        producer.start();
+        CountDownLatch countDownLatch = new CountDownLatch(100);
+        for (int i = 0; i < 100; i++) {
+            final int index = i;
+            Message message = new Message("Simple", "ATag", (i + "AsyncProducer").getBytes(StandardCharsets.UTF_8));
+            producer.send(message, new SendCallback() {
+                @Override
+                public void onSuccess(SendResult sendResult) {
+                    countDownLatch.countDown();
+                    System.out.println(index + "_消息发送成功_" + sendResult);
+                }
+
+                @Override
+                public void onException(Throwable e) {
+                    countDownLatch.countDown();
+                    System.out.println(index + "_消息发送失败_" + e.getStackTrace());
+                }
+            });
+        }
+        countDownLatch.await();
+        producer.shutdown();
+    }
+
+}
+
+~~~
+
+
+
+## 单向发送
+
+~~~java
+// 更改同步发送 SendResult sendResult = producer.send(message);   
+//  变成 producer.sendOneway(message);
+ producer.sendOneway(message);
+~~~
+
+
+
+## 消息的消费
+
+~~~java
+package com.xiaobo.codingeveryday.rocketmq;
+
+import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
+import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyContext;
+import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
+import org.apache.rocketmq.client.consumer.listener.MessageListenerConcurrently;
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.common.message.MessageExt;
+
+import java.util.List;
+
+public class ConsumerExample {
+
+    public static void main(String[] args) throws MQClientException {
+        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("SyncProducer");
+        consumer.setNamesrvAddr("192.168.2.128:9876");
+        consumer.subscribe("Simple", "*");
+        consumer.setMessageListener(new MessageListenerConcurrently() {
+            @Override
+            public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> list, ConsumeConcurrentlyContext context) {
+                for (int i = 0; i < list.size(); i++) {
+                    System.out.println(i + "_消息消费成功" + new String(list.get(i).getBody()));
+                }
+                return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
+            }
+        });
+        consumer.start();
+        System.out.println("consumer stared %n");
+
+    }
+}
+~~~
+
+# 消息消费
+
+## 拉模式一(不推荐)
+
+~~~java
+import org.apache.rocketmq.client.consumer.DefaultMQPullConsumer;
+import org.apache.rocketmq.client.consumer.PullResult;
+import org.apache.rocketmq.client.consumer.store.ReadOffsetType;
+import org.apache.rocketmq.client.exception.MQBrokerException;
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.common.message.MessageQueue;
+import org.apache.rocketmq.remoting.exception.RemotingException;
+
+import java.util.HashSet;
+import java.util.Set;
+
+public class PullConsumer {
+
+    public static void main(String[] args) throws MQClientException {
+        DefaultMQPullConsumer consumer = new DefaultMQPullConsumer("PullGroup");
+        consumer.setNamesrvAddr("192.168.2.128:9876");
+        HashSet<String> topics = new HashSet<>();
+        topics.add("Simple");
+        topics.add("TopicTest");
+        consumer.setRegisterTopics(topics);
+        consumer.start();
+        while (true) {
+            consumer.getRegisterTopics().forEach(n -> {
+                Set<MessageQueue> messageQueues = null;
+                try {
+                    messageQueues = consumer.fetchSubscribeMessageQueues(n);
+                    messageQueues.forEach(l -> {
+                        try {
+                            long offset = consumer.getOffsetStore().readOffset(l, ReadOffsetType.READ_FROM_MEMORY);
+                            if (offset < 0) {
+                                offset = consumer.getOffsetStore().readOffset(l, ReadOffsetType.READ_FROM_STORE);
+                            }
+                            if (offset < 0) {
+                                offset = consumer.maxOffset(l);
+                            }
+                            if (offset < 0) {
+                                offset = 0;
+                            }
+                            PullResult pullResult = consumer.pull(l, "*", offset, 20);
+//                            System.out.println("消息循环拉取成功_" + pullResult);
+                            switch (pullResult.getPullStatus()) {
+                                case FOUND:
+                                    pullResult.getMsgFoundList().forEach(k -> {
+                                        System.out.println("消息消费成功_" + k);
+                                    });
+                                    consumer.updateConsumeOffset(l, pullResult.getNextBeginOffset());
+                            }
+                        } catch (MQClientException e) {
+                            e.printStackTrace();
+                        } catch (RemotingException e) {
+                            e.printStackTrace();
+                        } catch (MQBrokerException e) {
+                            e.printStackTrace();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+
+    }
+}
+
+~~~
+
+## 拉模式二
+
+~~~java
+import org.apache.rocketmq.client.consumer.DefaultLitePullConsumer;
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.common.message.MessageExt;
+
+import java.util.List;
+
+/**
+ * 拉模式 随机获取一个queue消息
+ */
+public class LitePullConsumer {
+    public static void main(String[] args) throws MQClientException {
+        DefaultLitePullConsumer consumer = new DefaultLitePullConsumer("LitePullConsumer");
+        consumer.setNamesrvAddr("192.168.2.128:9876");
+        consumer.subscribe("Simple", "*");
+        consumer.start();
+        while (true) {
+            List<MessageExt> messageExtList = consumer.poll();
+            System.out.println("消息拉取成功");
+            messageExtList.forEach(n->{
+                System.out.println("消息消费成功_" + n);
+            });
+        }
+    }
+}
+~~~
+
+~~~java
+
+import org.apache.rocketmq.client.consumer.DefaultLitePullConsumer;
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.common.message.MessageExt;
+import org.apache.rocketmq.common.message.MessageQueue;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+/**
+*	拉模式 指定一个queue消息
+**/
+public class LitePullConsumerAssign {
+    public static void main(String[] args) throws MQClientException {
+        DefaultLitePullConsumer consumer = new DefaultLitePullConsumer("LitePullConsumer");
+        consumer.setNamesrvAddr("192.168.2.128:9876");
+        consumer.start();
+        Collection<MessageQueue> messageQueues = consumer.fetchMessageQueues("Simple");
+        ArrayList<MessageQueue> messageQueueArrayList = new ArrayList<>(messageQueues);
+        consumer.assign(messageQueueArrayList);
+//        consumer.seek(messageQueueArrayList.get(0), 10);
+        consumer.seek(messageQueueArrayList.get(1), 10);
+        while (true) {
+            List<MessageExt> messageExtList = consumer.poll();
+            System.out.println("消息拉取成功");
+            messageExtList.forEach(n->{
+                System.out.println("消息消费成功_" + n);
+            });
+        }
+    }
+}
+
+~~~
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
