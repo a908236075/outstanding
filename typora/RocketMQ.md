@@ -411,6 +411,150 @@ public class LitePullConsumerAssign {
 
 ~~~
 
+## 顺序消费
+
+~~~java
+import org.apache.rocketmq.client.exception.MQBrokerException;
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.client.producer.DefaultMQProducer;
+import org.apache.rocketmq.client.producer.MessageQueueSelector;
+import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.common.message.Message;
+import org.apache.rocketmq.common.message.MessageQueue;
+import org.apache.rocketmq.remoting.exception.RemotingException;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+public class OrderProducer {
+
+    public static void main(String[] args) throws MQClientException, RemotingException, InterruptedException, MQBrokerException {
+        DefaultMQProducer producer = new DefaultMQProducer("OrderGroup");
+        producer.setNamesrvAddr("192.168.2.128:9876");
+        producer.start();
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < 10; j++) {
+                Message message = new Message("Order", "TagA", ("order_" + i + "_step" + j).getBytes(StandardCharsets.UTF_8));
+                // object 和 i 要一致 id 对list.size() 取余
+                SendResult sendResult = producer.send(message, new MessageQueueSelector() {
+                    @Override
+                    public MessageQueue select(List<MessageQueue> list, Message msg, Object o) {
+                        int id = (Integer) o;
+                        int index = id % list.size();
+                        return list.get(index);
+                    }
+                }, i);
+                System.out.println("消息发送成功_" + sendResult);
+
+            }
+        }
+        producer.shutdown();
+
+    }
+
+}
+~~~
+
+~~~java
+import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
+import org.apache.rocketmq.client.consumer.listener.ConsumeOrderlyContext;
+import org.apache.rocketmq.client.consumer.listener.ConsumeOrderlyStatus;
+import org.apache.rocketmq.client.consumer.listener.MessageListenerOrderly;
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.common.message.MessageExt;
+
+import java.util.List;
+
+public class OrderConsumer {
+
+    public static void main(String[] args) throws MQClientException {
+        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("SimpleConsumer");
+        consumer.setNamesrvAddr("192.168.2.128:9876");
+        consumer.subscribe("Order", "*");
+        consumer.setMessageListener(new MessageListenerOrderly() {
+            @Override
+            public ConsumeOrderlyStatus consumeMessage(List<MessageExt> list, ConsumeOrderlyContext context) {
+                for (int i = 0; i < list.size(); i++) {
+                    System.out.println(i + "_消息发送成功_" + new String(list.get(i).getBody()));
+                }
+                return ConsumeOrderlyStatus.SUCCESS;
+            }
+        });
+        consumer.start();
+    }
+}
+~~~
+
+# 特殊的消息
+
+## 延迟消息
+
+~~~java
+import org.apache.rocketmq.client.exception.MQBrokerException;
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.client.producer.DefaultMQProducer;
+import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.common.message.Message;
+import org.apache.rocketmq.remoting.exception.RemotingException;
+
+import java.nio.charset.StandardCharsets;
+import java.time.LocalTime;
+
+public class ScheduleProducer {
+
+    public static void main(String[] args) throws MQClientException, RemotingException, InterruptedException, MQBrokerException {
+        String endpoint = "192.168.2.128:9876";
+        String topic = "Schedule";
+        DefaultMQProducer producer = new DefaultMQProducer("ScheduleProducer");
+        producer.setNamesrvAddr(endpoint);
+        producer.start();
+        for (int i = 0; i < 10; i++) {
+            Message message = new Message(topic, "Tags", (i + "_syncProducer").getBytes(StandardCharsets.UTF_8));
+            // 主要是这里!!!
+            // messageDelayLevel  1-18 对应 1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h
+            message.setDelayTimeLevel(2);
+//            message.setDelayTimeMs(10000l);
+            SendResult sendResult = producer.send(message);
+            System.out.printf(i + "_消息发送成功%s%n"+ LocalTime.now(), sendResult);
+        }
+        producer.shutdown();
+    }
+}
+~~~
+
+~~~java
+import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
+import org.apache.rocketmq.client.consumer.listener.ConsumeOrderlyContext;
+import org.apache.rocketmq.client.consumer.listener.ConsumeOrderlyStatus;
+import org.apache.rocketmq.client.consumer.listener.MessageListenerOrderly;
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.common.message.MessageExt;
+
+import java.time.LocalTime;
+import java.util.List;
+
+public class ScheduleConsumer {
+    public static void main(String[] args) throws MQClientException {
+        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("ScheduleConsumer");
+        consumer.setNamesrvAddr("192.168.2.128:9876");
+        consumer.subscribe("Schedule", "*");
+        consumer.setMessageListener(new MessageListenerOrderly() {
+            @Override
+            public ConsumeOrderlyStatus consumeMessage(List<MessageExt> list, ConsumeOrderlyContext context) {
+                for (int i = 0; i < list.size(); i++) {
+                    System.out.println(i + "_消息消费成功_" + LocalTime.now() + " " + new String(list.get(i).getBody()));
+                }
+                return ConsumeOrderlyStatus.SUCCESS;
+            }
+        });
+        consumer.start();
+        System.out.println("消费者启动成功!!");
+
+    }
+~~~
+
+
+
 
 
 
