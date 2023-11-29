@@ -74,6 +74,34 @@
    The broker[broker-a, 192.168.2.128:10911] boot success. serializeType=JSON and name server is localhost:9876
    ~~~
 
+## 部署模型
+
+![](.\picture\rocketmq\部署模型.png)
+
+## 订阅模型
+
+![](.\picture\rocketmq\架构图.png)
+
+![](.\picture\rocketmq\订阅模型.png)
+
+1. topic的一个消息队列,只允许消费组中的一个消费者进行消费.
+
+![](.\picture\rocketmq\消息队列和消费组之间的关系.png)
+
+2. topic的一个消息队列**可以**被不同的消费组进行消费.
+
+![](.\picture\rocketmq\消息队列和消费组之间的关系2.png)
+
+
+
+## 生产关系
+
+​	![](.\picture\rocketmq\生产关系.png)
+
+## 订阅关系
+
+![订阅模型](.\picture\rocketmq\订阅关系.png)
+
 ## 模拟消息生产和消费
 
 1. 生产
