@@ -78,6 +78,16 @@
 
 ![](.\picture\rocketmq\部署模型.png)
 
+## 工作流程
+
+![](.\picture\rocketmq\工作流程.png)
+
+注意:消费者比生产者多了一步,向Broker 发送心跳,确保Broker存活的状态.
+
+**同步**:Broker的master接收消息,等到消息同步到slave后,才会发从ack给producer.
+
+**异步**:不用等消息同步到slaver就发送ack.
+
 ## 订阅模型
 
 ![](.\picture\rocketmq\架构图.png)
