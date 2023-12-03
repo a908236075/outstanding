@@ -591,9 +591,17 @@ public class ScheduleConsumer {
     }
 ~~~
 
+---
 
+理论:
 
+# 消息的存储和保存
 
+1. Broker的store目录.
+
+![store文件目录](.\picture\rocketmq\store文件目录.png)
+
+2. 
 
 
 
