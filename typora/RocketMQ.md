@@ -276,7 +276,15 @@ public class AsyncProducer {
 
 
 
-## 消息的消费
+## 消息的顺序生成
+
+~~~java
+// todo
+~~~
+
+
+
+## 消息的消费(Push)
 
 ~~~java
 package com.xiaobo.codingeveryday.rocketmq;
@@ -601,7 +609,11 @@ public class ScheduleConsumer {
 
 ![store文件目录](.\picture\rocketmq\store文件目录.png)
 
-2. 
+# 4.x 消费生产
+
+
+
+
 
 
 
