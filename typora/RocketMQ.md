@@ -276,10 +276,48 @@ public class AsyncProducer {
 
 
 
-## 消息的顺序生成
+## 顺序发送
 
 ~~~java
-// todo
+import org.apache.rocketmq.client.exception.MQBrokerException;
+import org.apache.rocketmq.client.exception.MQClientException;
+import org.apache.rocketmq.client.producer.DefaultMQProducer;
+import org.apache.rocketmq.client.producer.MessageQueueSelector;
+import org.apache.rocketmq.client.producer.SendResult;
+import org.apache.rocketmq.common.message.Message;
+import org.apache.rocketmq.common.message.MessageQueue;
+import org.apache.rocketmq.remoting.exception.RemotingException;
+
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+public class OrderProducer {
+	// 按queue的顺序发送消息.
+    public static void main(String[] args) throws MQClientException, RemotingException, InterruptedException, MQBrokerException {
+        DefaultMQProducer producer = new DefaultMQProducer("OrderGroup");
+        producer.setNamesrvAddr("192.168.2.128:9876");
+        producer.start();
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < 10; j++) {
+                Message message = new Message("Order", "TagA", ("order_" + i + "_step" + j).getBytes(StandardCharsets.UTF_8));
+                SendResult sendResult = producer.send(message, new MessageQueueSelector() {
+                    
+                    @Override
+                    public MessageQueue select(List<MessageQueue> list, Message msg, Object o) {
+                        int id = (Integer) o;
+                        int index = id % list.size();
+                        return list.get(index);
+                    }
+                    // Object o 和 i 是同一个东西 表示orderId
+                    // i 的解释 arg  Argument to work along with message queue selector.
+                }, i);
+                System.out.println("消息发送成功_" + sendResult);
+            }
+        }
+        producer.shutdown();
+    }
+}
+
 ~~~
 
 
@@ -599,9 +637,32 @@ public class ScheduleConsumer {
     }
 ~~~
 
----
+## 事务消息
 
-理论:
+## 批量数据的生产和消费
+
+1. Consumer的MessageListenerConCurrently监听接口的consumeMessage()方法默认情况下只能消费一条消息,如果每次消费多条可以通过consumeMessageBatchMaxSize来指定,默认为1,每次拉取的消息数,可以通过Consumer的pullBatchSize属性来指定,默认为32,即每次拉取pullBatchSize条,拉取后分批次处理,每次处理consumeMessageBatchMaxSize条.存在消费失败的情况,需要合理设置并不是越大越好.
+
+## 消息过滤
+
+1. Tag过滤
+
+   1. ~~~java
+      consumer.subscribe("Schedule", "TagA || TagB");
+      ~~~
+
+2. Sql 过滤
+
+   1. 支持过滤用户的属性信心,也就messag中的properties.
+
+   2. .4.x默认不开启,需要设置enablePropertyFilter=true开启.
+
+   3. ~~~java
+      // 消息生产的时候提前设置了age属性 
+      //  Message message = new Message("Simple", "ATag", (i + "AsyncProducer").getBytes(StandardCharsets.UTF_8));
+      // message.putUserProperty("age",i+"");
+      consumer.subscribe("Schedule",MessageSelector.bySql("age between 0 and 10"));
+      ~~~
 
 # 消息的存储和保存
 
