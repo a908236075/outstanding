@@ -643,3 +643,19 @@ T1：session 1 执行查询，由于加了 for UPDATE保护，所以需要加 40
 \[3\]https://developer.aliyun.com/article/877241
 
 \[4\]http://mysql.taobao.org/monthly/2022/05/02/
+
+###  锁模式
+
+InnoDB的读写锁有三种基本模式：S（Shared），X（Excluded）和SX（Shared Excluded）。它们的锁兼容性关系如下表所示：
+
+|      | S    | SX   | X    |
+| ---- | ---- | ---- | ---- |
+|      |      |      |      |
+
+#### SX锁的含义
+
+S和X模式比较好理解是经典的读写锁两种模式。SX模式是对X模式的一种优化，它与读操作的S模式兼容，但是多个SX锁之间是冲突的。
+
+典型的应用场景是对dict_index_t.lock冲突的优化。在过去，当插入操作会造成B+ Tree Node分裂时，使用悲观模式插入记录。此时，需要在dict_index_t.lock上加X锁，要修改的所有相关Leaf Page上加X锁，完成后开始对Branch Node进行修改，而Branch Node上不需要加任何锁。当以这种模式插入时，将阻塞所有在该 B+ Tree上的搜索操作，因为搜索操作的第一步就是在dict_index_t.lock上加S锁。
+
+通过SX锁可以优化该场景：悲观模式的插入操作在dict_index_t.lock上加SX锁，同时在需要修改的Branch Node上加X锁，此时因为在dict_index_t.lock上加的是SX锁，就不会阻塞所有在B+ Tree上的搜索操作，把阻塞范围缩小到访问同一个Branch Node的插入和搜索操作之间。
