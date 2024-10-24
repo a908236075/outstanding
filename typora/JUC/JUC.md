@@ -208,7 +208,15 @@ lock.writeLock().unlock();
 
 ![](.\picture\JUC\Lock与Synchronized锁区别.png)
 
+## 线程池
 
+### 实现原理
+
+![](..\typora\picture\JUC\线程池实现原理.png)
+
+### 重要的参数
+
+![](..\typora\picture\JUC\线程池的重要参数.png)
 
 ## 其它知识
 
@@ -220,3 +228,185 @@ lock.writeLock().unlock();
    2. 发现读的时候不需要阻塞,甚至读写的时候需要区别处理,所以引入了读写锁,并设置了可重入的特性.
    3. 一般读多写少,导致写锁饥饿的问题,引入了邮戳锁.
 
+## CompletableFuture
+
+### FutureTask
+
+![](.\picture\JUC\FutureTask.png)
+
+2. FutureTask 实现了 RunableFuture,构造方法还需要传递一个Callbale,所以他是回调/异步/多线程 都能具有的类.
+
+### Future 的缺点
+
+1. ~~~java
+   public class DisadvantageFuture {
+       public static void main(String[] args) throws ExecutionException, InterruptedException {
+           FutureTask<String> task = new FutureTask<>(() -> {
+               System.out.println("执行了");
+               TimeUnit.SECONDS.sleep(3);
+               return "task over";
+           });
+           Thread thread = new Thread(task);
+           thread.start();
+           System.out.println(Thread.currentThread().getName() + "执行其他的任务去了");
+       //    task.get();
+      //   task.get(2, TimeUnit.SECONDS);
+            while (true) {
+               if (task.isDone()) {
+                   System.out.println(task.get());
+                   break;
+               }else {
+                   TimeUnit.SECONDS.sleep(1);
+                   System.out.println("正在轮询.....");
+               }
+           }
+       }
+   }
+   ~~~
+
+2. get()容易导致阻塞,一般建议放在程序的后面.
+
+3. 轮询耗费CPU的资源.
+
+### CompletableFuture
+
+1. 两种创建CompletableFuture的方式
+
+   1. ```java
+      public class CompletableFutureFirst {
+          public static void main(String[] args) throws ExecutionException, InterruptedException {
+      //        runAsyncExecutorService();
+              CompletableFuture<String> firstRunning = CompletableFuture.supplyAsync(() -> {
+                  try {
+                      TimeUnit.SECONDS.sleep(1);
+                  } catch (InterruptedException e) {
+                      e.printStackTrace();
+                  }
+                  System.out.println("CompletableFutureFirst running")    ;
+                  return "CompletableFutureFirst task over!!";
+              });
+      
+              System.out.println(firstRunning.get());
+          }
+      
+          private static void runAsyncExecutorService() throws InterruptedException, ExecutionException {
+              ExecutorService executorService = Executors.newFixedThreadPool(3);
+              CompletableFuture<Void> completableFuture = CompletableFuture.runAsync(() -> {
+                  System.out.println(Thread.currentThread().getName());
+                  try {
+                      TimeUnit.SECONDS.sleep(1);
+                      System.out.println("CompletableFutureFirst run");
+                  } catch (InterruptedException e) {
+                      e.printStackTrace();
+                  }
+              }, executorService);
+              System.out.println(completableFuture.get());
+              executorService.shutdown();
+          }
+      
+      }
+      // runAsync 方法没有返回值  supplyAsync 方法有
+      ```
+
+2. 案例优化,比较FutureTask不需要轮询,就能获取结果
+
+   1. ~~~java
+      public class CompletableFutureSecond {
+      
+          public static void main(String[] args) throws ExecutionException, InterruptedException {
+      //        first();
+              ExecutorService threadPool = Executors.newFixedThreadPool(3);
+              try {
+                  CompletableFuture<Integer> completableFuture = CompletableFuture.supplyAsync(() -> {
+                      int result = ThreadLocalRandom.current().nextInt(10);
+                      try {
+                          TimeUnit.SECONDS.sleep(1);
+                      } catch (InterruptedException e) {
+                          e.printStackTrace();
+                      }
+                      System.out.println("-----1秒钟后出现了结果!!!" + result);
+                      if (result > 5) {
+                          int i = 10 / 0;
+                      }
+                      return result;
+                  }, threadPool).whenComplete((v, e) -> {
+                      if (e == null) {
+                          System.out.println("-----计算完成,更新系统updateV:" + v);
+                      }
+                  }).exceptionally(e -> {
+                      e.printStackTrace();
+                      System.out.println("异常了: " + e.getCause() + "\t" + e.getMessage());
+            	 		           return null;
+                  });
+              } catch (Exception e) {
+                  e.printStackTrace();
+              } finally {
+                  threadPool.shutdown();
+              }
+          }
+      
+          private static void first() throws InterruptedException, ExecutionException {
+              CompletableFuture<Integer> completableFuture = CompletableFuture.supplyAsync(() -> {
+                  int result = ThreadLocalRandom.current().nextInt(10);
+                  try {
+                      TimeUnit.SECONDS.sleep(1);
+                  } catch (InterruptedException e) {
+                      e.printStackTrace();
+                  }
+                  System.out.println("-----1秒钟后出现了结果!!!" + result);
+                  return result;
+              });
+              System.out.println(Thread.currentThread().getName() + "忙其他的线程去了!!!");
+              System.out.println(completableFuture.get());
+          }
+      
+      }
+      ~~~
+
+   2. 接收结果后处理
+   
+      1. ~~~java
+         public class CompletableFutureResult {
+         
+             public static void main(String[] args) {
+                 CompletableFuture.supplyAsync(() -> 1)
+                         .thenApply(a -> a + 2)
+                         .whenComplete((ele, throwable) -> {
+                     System.out.println(ele);
+                     String s = throwable.getMessage() + ":" + throwable.getCause();
+                     System.out.println(s);
+                 });
+             }
+         }
+         // thenApply 将结果进行返回
+         // handle 正常的情况下 和thenApply一样,只有异常的时候,即使遇到了异常,也能执行之后的步骤.
+         // handle 一般是必须要执行的步骤  例如关流
+         ~~~
+   
+      2. thenRun,不需要上一步的结果,也没有返回结果,thenAccept 需要上一步结果,自己没有结果.thenApply 需要上一步结果,也有返回值.
+   
+      3. join和get一样都可以返回得到执行的结果,但是join不会报异常.
+   
+      4. thenRunAsync() 调用的时候,需要自定义线程池,才行实现多线程的调用.第一个任务,使用的自定义的线程池,之后的步骤使用的是CommonPool线程池.也就是默认的线程池.thenRun(),方法,只会调用上一个步骤的线程.
+   
+      5. 异步回调的时候需要传出我们自己的线程池.
+   
+      6. 线程池循环容易导致死锁,即 CompletableFuture.supplyAsync在调用 CompletableFuture.supplyAsync,当CommonPool线程打满,而子线程还在等待释放线程,而主线程又等待子线程执行完任务后在释放线程,循环等待,导致死锁.
+   
+         1. ~~~java
+            public Object doGet() {
+              ExecutorService threadPool1 = new ThreadPoolExecutor(10, 10, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(100));
+              CompletableFuture cf1 = CompletableFuture.supplyAsync(() -> {
+              //do sth
+                return CompletableFuture.supplyAsync(() -> {
+                    System.out.println("child");
+                    return "child";
+                  }, threadPool1).join();//子任务
+                }, threadPool1);
+              return cf1.join();
+            }
+            ~~~
+   
+         2. 
+   
+      7. 

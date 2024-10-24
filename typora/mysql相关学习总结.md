@@ -158,9 +158,18 @@
 
 1. B+Tree结构
 
-![](\picture\mysql\B+Tree.png)
+![](.\picture\mysql\B+Tree.png)
 
-## 常用Sql
+2. 普通索引和二级索引数据结构
+   1. ![](.\picture\mysql\主键索引和普通索引的数据结构.png)
+3. 复合索引数据结构
+   1. ![](.\picture\mysql\组合索引的数据结构.png)
+   2. 组合索引非叶子节点存储的是联合索引的值,叶子节点比非叶子节点多了一个主键,命中的数据,更具主键在进行回表查询.
+
+4. B-Tree和B+Tree的区别
+   1. B-Tree 是叶子节点和非叶子节点都存储数据的.
+   2. B+Tree 是只有叶子节点存储数据.因为非叶子节点不存储数据,所以可以存更多的索引key,会使索引更加的聚合,查询效率会更高.
+---
 
 ~~~sql
 ##表设计
@@ -168,4 +177,3 @@ desc your_table_name
 ##展示索引
 SHOW INDEX FROM your_table_name;
 ~~~
-
