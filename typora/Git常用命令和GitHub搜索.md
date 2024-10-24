@@ -68,3 +68,46 @@ git push -u origin main
       git branch -M main
       git push -u origin main
       ~~~
+
+#### 分支操作
+
+~~~shell
+## 查看本地分支
+git branch
+## 查看远程分支
+git branch -r
+## 创建分支
+git branch branchname
+## 切换分支
+git checkout branchname
+## 合并分支
+git merge branchname
+## 分支删除
+git branch -D branchname
+~~~
+
+
+
+#### 修改分支名称
+
+**方法1:使用git命令操作修改本地分支名称**
+
+~~~shell
+git branch -m oldBranchName newBranchName
+~~~
+
+**方法2:使用git命令操作修改远程分支名称**
+
+将本地分支的远程分支删除
+
+~~~shell
+git push origin :oldBranchName
+~~~
+
+将改名后的本地分支推送到远程，并将本地分支与之关联
+
+~~~shell
+git push origin :oldBranchName
+git push --set-upstream origin newBranchName
+~~~
+

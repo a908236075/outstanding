@@ -160,6 +160,12 @@
 
 ![](\picture\mysql\B+Tree.png)
 
----
+## 常用Sql
 
-# 深入学习2
+~~~sql
+##表设计
+desc your_table_name
+##展示索引
+SHOW INDEX FROM your_table_name;
+~~~
+
