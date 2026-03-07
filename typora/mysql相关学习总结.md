@@ -62,8 +62,7 @@
       使用case when 的别名,进行分组,防止一处更改而忘了另一处.
    2. 约束 主键约束  唯一约束  check约束的 ,CONSTRAINT(外部连接约束) 一般会在建表的时候进行检验.
    3. 内连接和外连接的区别,如果通过价格排序table1.price<table2.price**,使用内连接会把第一的价格过滤掉.**
-   4. 为什么判断null值是 is null 但不是 = null ,这是因为，NULL 既不是值也不是变量。NULL 只是一个表示“**没**
-      **有值**”的标记，**而比较谓词只适用于值**。因此，对并非值的 NULL 使
+   4. 为什么判断null值是 is null 但不是 = null ,这是因为，NULL 既不是值也不是变量。NULL 只是一个表示“**没有值**”的标记，**而比较谓词只适用于值**。因此，对并非值的 NULL 使
       用比较谓词本来就是没有意义的
    5. 真值 unknown 和作为 NULL 的一种的UNKNOWN （未知）是不同的东西。前者是明确的布尔型的真值，后者既不是值也不是变量.
    6. In和exists可以等价互换,但是not in 和not Exists不能等价互换,原因是由null的存在,如果age not in(12,13,null),这个永远返回null,而exists会返回结果**,exist是经过处理的,只会返回true或者false**,永远不会返回unknown.
@@ -75,7 +74,7 @@
    10. 关联子查询和自连接在很多时候都是等价的.
    11. group by 分组后会形成新的视图,通常不能沿用原表的索引.所以使用where代替Having可是是性能更好.
    12. !=和not in 不能用到索引.
-
+   
 4. ### Sql 练习语句
 
    1. ~~~sql
@@ -177,3 +176,81 @@ desc your_table_name
 ##展示索引
 SHOW INDEX FROM your_table_name;
 ~~~
+
+## Explain
+
+### ID
+
+1. 一般的情况下,如果语句不重新写,select语句中 有几个select就有几个ID.
+2. ID号相同 从上到下执行
+3. ID号越大优先级越高,越先执行.
+
+### select_type
+
+1. 每一个小查询(select)的角色.
+2. simple(单表)
+3. union 查询 最左边的表(驱动表)是primary.右边的表叫做union.临时表为union result.
+
+### type
+
+1. `system`:如果引擎是MyISAM. 直接从索引上返回数据了.
+
+2. `const`:根据主键或者唯一二级索引列与常数进行等值匹配时,对单表的访问方法就是
+
+3. `eq_ref`:如果被驱动表是通过'const'那种方式匹配的.
+
+4. `ref`:普通的二级索引与常量进行等值匹配时来查询某个表.
+
+5.  `index_merge`:用Or拼接的两个条件都是索引
+
+6. `unique_subquery`是针对在一些包含`IN`子查询的查询语句中，如果查询优化器决定将`IN`子查询转换为`EXISTS`子查询，而且子查询可以使用到主键进行等值匹配的话，那么该子查询执行计划的`type`列的值就是`unique_subquery`
+
+   1. ~~~sql
+      EXPLAIN SELECT * FROM s1
+      WHERE key2 IN (SELECT id FROM s2 WHERE s1.key1 = s2.key1 OR key3 = 'a';
+      ~~~
+
+7. `range`：使用的索引是范围的
+
+   1. ~~~sql
+      EXPLAIN SELECT * FROM s1  where key1 in ('a','b','c');
+      ~~~
+
+8. `index`:当我们可以使用索引覆盖，但需要扫描全部的索引记录时(不能直接使用联合索引(a,b,c),但是需要查询c,就把索引全部查询一遍)，该表的访问方法就是`index` 
+
+   1. ~~~sql
+      EXPLAIN SELECT key_part2 FROM s1 WHERE key_part3 = 'a';
+      ~~~
+
+9. `all`:全表扫描
+
+### possible_key和key
+
+1. 并不是选择越多越好
+
+### key_length
+
+1. 主要针对的是**联合索引**,值越大越好.
+
+### ref
+
+1. ref：当使用索引列等值查询时，与索引列进行等值匹配的对象信息。 # 比如只是一个常数或者是某个列。
+   1. `const`：表示匹配的是一个常量（如`WHERE id = 1`中的`1`）；
+   2. 列名：表示匹配的是另一张表的列（如关联查询中`ON a.id = b.a_id`的`b.a_id`）；
+   3. `func`：表示匹配的是一个函数或表达式的结果。
+
+### rows
+
+1. 预估的需要读取的记录数.
+
+### filtered
+
+1. 某个表经过搜索条件过滤后剩余记录条数的百分比.越大越好
+2. 单表查询没有意义,更关注连接查询中,决定了被驱动表要执行的次数.(rows*filtered)
+
+### Extra
+
+1. 查询列表中有where条件 且 where人条件字段不是索引,显示`where`
+2. 
+
+​    
