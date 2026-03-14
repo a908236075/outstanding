@@ -892,7 +892,28 @@ Broker 内部运行着一个后台服务 `ScheduleMessageService`。
 
 ## 零拷贝
 
+**【零拷贝：mmap (Memory Mapped Files)】** RocketMQ 主要使用的就是 `mmap` 技术。 它直接将内核空间的 PageCache (内存)**映射**到了用户空间的内存地址上。
 
+- **效果：** 应用程序读写这段虚拟内存，就等于直接读写 PageCache。**省去了内核态和用户态之间的那次数据复制！**
+- **为什么 RocketMQ 用 mmap？** 因为 RocketMQ 在把消息发出去之前，或者在写完 `CommitLog` 之后，它的后台线程还需要读取这条消息去构建 `ConsumeQueue`（索引）。`mmap` 允许用户态代码直接访问数据，非常适合这种需要二次处理的场景。
+
+**【零拷贝：sendfile】** 这是 Kafka 大量使用的另一种零拷贝技术。
+
+- **效果：** 数据直接在内核里从 PageCache 灌进 Socket 缓冲区，连用户态都不去了。
+- **为什么 Kafka 用 sendfile？** 因为 Kafka 本质上是一个单纯的数据管道，它不需要在服务端解析消息的具体内容，直接原封不动转交到网卡即可，`sendfile` 的性能比 `mmap` 还要激进。
+
+## Broker的不同
+
+###  零拷贝技术的侧重点：`sendfile` vs `mmap`
+
+虽然两者都用了零拷贝，但因为 Broker 对消息的“关心程度”不同，选用的底层系统调用完全不一样。
+
+- **Kafka Broker (追求极致搬运)：使用 `sendfile`**
+  - Kafka 的 Broker 非常“纯粹”，它把数据从磁盘读出来发给 Consumer 时，根本不在乎消息内容是什么。
+  - 因此它大量使用 Linux 的 `sendfile` 系统调用，数据直接在内核态从 PageCache 灌入 Socket 缓冲区，全程不经过用户态。这也是它吞吐量无敌的根本原因。
+- **RocketMQ Broker (需要懂业务)：使用 `mmap`**
+  - RocketMQ 不能用纯粹的 `sendfile`。因为 Broker 收到消息后，后台线程需要**读取消息内容**去构建 `ConsumeQueue` 索引和 `IndexFile`（哈希索引），在消费端拉取时，Broker 还要根据消息里的 `Tag` 或 SQL92 属性进行**服务端过滤**。
+  - 所以它必须把文件映射到用户态内存中（`mmap`），让 Java 代码能“看”到数据。这稍微牺牲了一丁点纯搬运性能，换来了强大的业务处理能力。
 
 
 
