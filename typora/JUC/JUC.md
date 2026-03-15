@@ -4,7 +4,7 @@
 
 1. ReentrantLock--> Sync-(继承)->AbstractQueuedSynchronizer 抽象队列锁 以及ReentrantLock对应的关系.
 
-   - ![](..\typora\picture\JUC\AQS与Lock的关系.png)
+   - ![](..\picture\JUC\AQS与Lock的关系.png)
 
 2. 加锁会导致阻塞,持有和释放锁通过AQS进行管理.底层是是队列和volatile修饰的int类型的state.
 
@@ -67,12 +67,12 @@
        }
       ~~~
 
-   2. Node的状态值代表的含义![](..\typora\picture\JUC\AQS中的Node属性值.png)
+   2. Node的状态值代表的含义![](picture/JUC/AQS中的Node属性值.png)
 
 4. 公平锁与非公平锁
 
-   1. ![](..\typora\picture\JUC\(非)公平锁.png)
-   2. ![](..\typora\picture\JUC\公平与非获取锁的区别.png)
+   1. ![](../picture/JUC/(非)公平锁.png)
+   2. ![](..\picture\JUC\公平与非获取锁的区别.png)
    3. 公平锁会优先让等待的队列中的node获取锁.
 
 5. ReentrantLock可重入锁非公平锁的lock方法
@@ -206,17 +206,17 @@ lock.writeLock().unlock();
 
 ## Lock与Synchronized锁不同
 
-![](.\picture\JUC\Lock与Synchronized锁区别.png)
+![](..\picture\JUC\Lock与Synchronized锁区别.png)
 
 ## 线程池
 
 ### 实现原理
 
-![](..\typora\picture\JUC\线程池实现原理.png)
+![](..\picture\JUC\线程池实现原理.png)
 
 ### 重要的参数
 
-![](..\typora\picture\JUC\线程池的重要参数.png)
+![](..\picture\JUC\线程池的重要参数.png)
 
 ## 其它知识
 
@@ -232,7 +232,7 @@ lock.writeLock().unlock();
 
 ### FutureTask
 
-![](.\picture\JUC\FutureTask.png)
+![](..\picture\JUC\FutureTask.png)
 
 2. FutureTask 实现了 RunableFuture,构造方法还需要传递一个Callbale,所以他是回调/异步/多线程 都能具有的类.
 
