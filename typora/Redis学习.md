@@ -614,7 +614,41 @@ redis-cli --cluster fix 127.0.0.1:7000
 
 1. 使用空对象和bloomFilter解决.
    1. 空对象 当有请求到redis中,返回一个空对象.但是对于恶意攻击,每次都有一个新的key,不能有效的解决.
+   
    2. 通过bloomFilter过滤器判断是否存在key,如果没有直接返回空值,如果有就请求redis,如果这次不是误判,从redis取值返回,如果不存在则在请求mysql返回. 
+   
+   3. ~~~java
+      import org.redisson.Redisson;
+      import org.redisson.api.RBloomFilter;
+      import org.redisson.api.RedissonClient;
+      import org.redisson.config.Config;
+      
+      public class BloomFilterExample {
+          public static void main(String[] args) {
+              // 1. 初始化 Redisson 客户端
+              Config config = new Config();
+              config.useSingleServer().setAddress("redis://127.0.0.1:6379");
+              RedissonClient redisson = Redisson.create(config);
+      
+              // 2. 获取布隆过滤器对象
+              RBloomFilter<String> bloomFilter = redisson.getBloomFilter("user_filter");
+              
+              // 3. 初始化: 预计总数 1,000,000, 误判率 1% (只有第一次创建时需要调用)
+              bloomFilter.tryInit(1000000L, 0.01);
+      
+              // 4. 添加数据
+              bloomFilter.add("user:1001");
+      
+              // 5. 检查数据
+              boolean mightExist = bloomFilter.contains("user:1001"); // true
+              boolean notExist = bloomFilter.contains("user:9999");   // false
+      
+              redisson.shutdown();
+          }
+      }
+      ~~~
+   
+   2. 
 
 ## 缓存击穿
 
