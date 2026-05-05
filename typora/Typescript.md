@@ -166,4 +166,36 @@ tsc --watch // 监控文件变化 自动转为js.
    printStatus('hello')
    ~~~
 
+
+### Interface
+
+1. interface与type的区别
+   1. 都可以用于定义对象结构,两者在许多场景中可以互换.
+   2. type:可以定义类型别名,联合类型,交叉类型,但不支持继承和自动合并.
+
+### 泛型
+
+1. 有any为什么还有泛型  泛型可以保有类型检查
+
+2. ~~~ty
+   // 用 any
+   function identity_any(arg: any): any {
+       return arg;
+   }
+   
+   const result1 = identity_any("hello");
+   // result1 的类型是 any，类型信息丢失了
+   result1.toFixed(2);  // ❌ 编译不报错，但运行时崩溃！
+   
+   
+   // 用泛型
+   function identity<T>(arg: T): T {
+       return arg;
+   }
+   
+   const result2 = identity("hello");
+   // result2 的类型是 string，类型信息保留了
+   result2.toFixed(2);  // ✅ 编译直接报错，string 没有 toFixed
+   ~~~
+
 3. 
